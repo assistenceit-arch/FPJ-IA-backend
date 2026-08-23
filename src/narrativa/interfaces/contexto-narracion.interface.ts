@@ -10,6 +10,18 @@ export interface ElementoNarracion {
   ubicacionHallazgo: string;
   direccionIncautacion: string;
   observaciones?: string | null;
+  // Adenda 2026-08-23 (módulo Receptación): fuente de verificación de
+  // que el elemento tiene reporte de hurto, y datos propios de esa
+  // fuente. Uso operativo exclusivo de Receptación.
+  fuenteVerificacionHurto?: string | null; // APLICATIVO | DENUNCIA
+  nombreAplicativo?: string | null;
+  numeroReporteAplicativo?: string | null;
+  numeroDenuncia?: string | null;
+  entidadDenuncia?: string | null;
+  fechaDenuncia?: string | null;
+  denuncianteNombre?: string | null;
+  denuncianteDocumento?: string | null;
+  denuncianteTelefono?: string | null;
 }
 
 export interface IntervinienteNarracion {
@@ -113,6 +125,19 @@ export interface VictimaNarracion {
     descripcionBase: string;
     recuperado: boolean | null;
     recuperadoPor: string | null;
+    // Adenda 2026-08-23 (módulo Receptación): esta víctima solo se
+    // vincula ocasionalmente en Receptación -- cuando existe, la fuente
+    // de verificación del reporte de hurto también es relevante en su
+    // contexto.
+    fuenteVerificacionHurto?: string | null;
+    nombreAplicativo?: string | null;
+    numeroReporteAplicativo?: string | null;
+    numeroDenuncia?: string | null;
+    entidadDenuncia?: string | null;
+    fechaDenuncia?: string | null;
+    denuncianteNombre?: string | null;
+    denuncianteDocumento?: string | null;
+    denuncianteTelefono?: string | null;
   }[];
   // Adenda 2026-08-22 (módulo Lesiones Personales): estado físico de la
   // víctima -- mismo criterio que IntervinienteNarracion, sin

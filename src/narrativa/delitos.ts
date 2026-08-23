@@ -21,6 +21,7 @@ export const DELITOS_SOPORTADOS: Record<string, string> = {
   'Lesiones Personales': 'lesiones-personales',
   'Violencia contra Servidor Público': 'violencia-servidor-publico',
   'Violencia Intrafamiliar': 'violencia-intrafamiliar',
+  'Receptación': 'receptacion',
 };
 
 export function prefijoPromptPorDelito(delito: string): string {

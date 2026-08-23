@@ -249,6 +249,32 @@ export class ElementosIncautadosService {
         victimaId: dto.victimaId ?? null,
         recuperado: dto.recuperado ?? null,
         recuperadoPor: dto.recuperado ? dto.recuperadoPor?.trim() || null : null,
+        // Adenda 2026-08-23 (módulo Receptación): fuente de verificación
+        // de que el elemento tiene reporte de hurto. Solo se conservan
+        // los datos de la fuente efectivamente seleccionada -- si se
+        // cambia de APLICATIVO a DENUNCIA (o viceversa) en una edición
+        // posterior, los datos de la fuente anterior se limpian.
+        fuenteVerificacionHurto: dto.fuenteVerificacionHurto ?? null,
+        nombreAplicativo:
+          dto.fuenteVerificacionHurto === 'APLICATIVO' ? dto.nombreAplicativo?.trim() || null : null,
+        numeroReporteAplicativo:
+          dto.fuenteVerificacionHurto === 'APLICATIVO'
+            ? dto.numeroReporteAplicativo?.trim() || null
+            : null,
+        numeroDenuncia:
+          dto.fuenteVerificacionHurto === 'DENUNCIA' ? dto.numeroDenuncia?.trim() || null : null,
+        entidadDenuncia:
+          dto.fuenteVerificacionHurto === 'DENUNCIA' ? dto.entidadDenuncia?.trim() || null : null,
+        fechaDenuncia:
+          dto.fuenteVerificacionHurto === 'DENUNCIA' && dto.fechaDenuncia
+            ? new Date(dto.fechaDenuncia)
+            : null,
+        denuncianteNombre:
+          dto.fuenteVerificacionHurto === 'DENUNCIA' ? dto.denuncianteNombre?.trim() || null : null,
+        denuncianteDocumento:
+          dto.fuenteVerificacionHurto === 'DENUNCIA' ? dto.denuncianteDocumento?.trim() || null : null,
+        denuncianteTelefono:
+          dto.fuenteVerificacionHurto === 'DENUNCIA' ? dto.denuncianteTelefono?.trim() || null : null,
         ...detalle,
       },
       include: {

@@ -1,5 +1,6 @@
 import {
   IsBoolean,
+  IsDateString,
   IsIn,
   IsInt,
   IsNotEmpty,
@@ -12,6 +13,8 @@ import {
 
 export const TIPOS_ELEMENTO = ['SUSTANCIA', 'DINERO', 'CELULAR', 'ARMA', 'OTRO'] as const;
 export type TipoElemento = (typeof TIPOS_ELEMENTO)[number];
+
+export const FUENTES_VERIFICACION_HURTO = ['APLICATIVO', 'DENUNCIA'] as const;
 
 export const TIPOS_ARMA = ['PISTOLA', 'REVOLVER', 'ESCOPETA', 'FUSIL', 'HECHIZA'] as const;
 export const ESTADOS_ARMA = ['BUEN_ESTADO', 'REGULAR_ESTADO', 'MAL_ESTADO'] as const;
@@ -57,6 +60,49 @@ export class CrearElementoDto {
   @IsNotEmpty()
   @IsString()
   recuperadoPor?: string;
+
+  // Adenda 2026-08-23 (módulo Receptación): fuente de verificación de
+  // que el elemento tiene reporte de hurto.
+  @IsOptional()
+  @IsIn(FUENTES_VERIFICACION_HURTO)
+  fuenteVerificacionHurto?: string;
+
+  @ValidateIf((o) => o.fuenteVerificacionHurto === 'APLICATIVO')
+  @IsNotEmpty()
+  @IsString()
+  nombreAplicativo?: string;
+
+  @IsOptional()
+  @IsString()
+  numeroReporteAplicativo?: string;
+
+  @ValidateIf((o) => o.fuenteVerificacionHurto === 'DENUNCIA')
+  @IsNotEmpty()
+  @IsString()
+  numeroDenuncia?: string;
+
+  @ValidateIf((o) => o.fuenteVerificacionHurto === 'DENUNCIA')
+  @IsNotEmpty()
+  @IsString()
+  entidadDenuncia?: string;
+
+  @ValidateIf(
+    (o) => o.fechaDenuncia !== undefined && o.fechaDenuncia !== null && o.fechaDenuncia !== '',
+  )
+  @IsDateString()
+  fechaDenuncia?: string;
+
+  @IsOptional()
+  @IsString()
+  denuncianteNombre?: string;
+
+  @IsOptional()
+  @IsString()
+  denuncianteDocumento?: string;
+
+  @IsOptional()
+  @IsString()
+  denuncianteTelefono?: string;
 
   // ── Exclusivos de SUSTANCIA ──
   @ValidateIf((o) => o.tipoElemento === 'SUSTANCIA')

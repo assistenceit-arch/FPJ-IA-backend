@@ -514,6 +514,26 @@ model ElementoIncautado {
   recuperado    Boolean?
   recuperadoPor String?
 
+  // Adenda 2026-08-23 (módulo Receptación): cómo se estableció que este
+  // elemento tiene reporte de hurto -- consulta en un aplicativo
+  // policial, o denuncia presentada por un tercero ante los
+  // funcionarios. Uso operativo exclusivo de Receptación.
+  fuenteVerificacionHurto String? // APLICATIVO | DENUNCIA
+
+  // Datos propios de la fuente "APLICATIVO".
+  nombreAplicativo        String?
+  numeroReporteAplicativo String?
+
+  // Datos propios de la fuente "DENUNCIA". El denunciante se registra
+  // aquí con datos simples (no como Víctima -- puede ser un tercero que
+  // solo reporta, no necesariamente la víctima original del hurto).
+  numeroDenuncia       String?
+  entidadDenuncia      String?
+  fechaDenuncia        DateTime?
+  denuncianteNombre    String?
+  denuncianteDocumento String?
+  denuncianteTelefono  String?
+
   tipoElemento        String // SUSTANCIA | DINERO | CELULAR | ARMA | OTRO
   descripcionBase     String // RN-006/RN-007: única, generada automáticamente
   ubicacionHallazgo   String
