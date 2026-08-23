@@ -23,6 +23,7 @@ export const DELITOS_SOPORTADOS: Record<string, string> = {
   'Violencia Intrafamiliar': 'violencia-intrafamiliar',
   'Receptación': 'receptacion',
   'Homicidio': 'homicidio',
+  'Suministro a Menor': 'suministro-menor',
 };
 
 export function prefijoPromptPorDelito(delito: string): string {
