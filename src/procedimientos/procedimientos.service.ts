@@ -157,7 +157,6 @@ export class ProcedimientosService {
       this.prisma.lugarProcedimiento.findUnique({ where: { procedimientoId: procedimiento.id } }),
       this.prisma.capturado.findMany({
         where: { procedimientoId: procedimiento.id },
-        include: { elementosIncautados: true },
       }),
       this.prisma.actuacionesProcedimiento.findUnique({ where: { procedimientoId: procedimiento.id } }),
       this.prisma.documentoGenerado.count({ where: { procedimientoId: procedimiento.id } }),
@@ -191,9 +190,14 @@ export class ProcedimientosService {
         this.textoCompleto(v),
       );
 
-    // 4. Elementos incautados (binario, suma de todos los intervinientes)
-    const totalElementos = capturados.reduce((total, c) => total + c.elementosIncautados.length, 0);
-    const elementosOk = totalElementos > 0;
+    // 4. Elementos incautados (Adenda 2026-08-22: antes exigía al menos
+    // uno -- bug real reportado tras caso en vivo de Hurto: no hay
+    // ninguna razón operativa para bloquear un procedimiento que
+    // válidamente no incautó nada. Una vez se sabe con certeza cuántos
+    // elementos hay (la consulta ya se ejecutó), cero es tan válido
+    // como cualquier otra cantidad -- mismo criterio que el frontend en
+    // estadoElementos, src/lib/estados.ts).
+    const elementosOk = true;
 
     // 5. Actuaciones procedimentales
     let actuacionesOk = false;
