@@ -789,6 +789,12 @@ export class DocumentosService {
         existenAmenazas: v.existenAmenazas,
         descripcionAmenazas: v.descripcionAmenazas,
         lugarEntregaExigido: v.lugarEntregaExigido,
+        // Adenda 2026-08-23 (módulo Daño en Bien Ajeno o del Estado).
+        descripcionBienDanado: v.descripcionBienDanado,
+        mecanismoDano: v.mecanismoDano,
+        valorEstimadoDano: v.valorEstimadoDano,
+        esBienEstatal: v.esBienEstatal,
+        entidadPropietariaBien: v.entidadPropietariaBien,
       })),
       actuaciones: {
         autoridadReceptora: actuaciones.autoridadReceptora,

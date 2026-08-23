@@ -247,4 +247,26 @@ export class CrearVictimaDto {
   @IsOptional()
   @IsString()
   lugarEntregaExigido?: string;
+
+  // Adenda 2026-08-23 (módulo Daño en Bien Ajeno o del Estado):
+  // exclusivo de este delito.
+  @IsOptional()
+  @IsString()
+  descripcionBienDanado?: string;
+
+  @IsOptional()
+  @IsString()
+  mecanismoDano?: string;
+
+  @IsOptional()
+  @IsString()
+  valorEstimadoDano?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  esBienEstatal?: boolean;
+
+  @ValidateIf((o) => o.esBienEstatal === true)
+  @IsString()
+  entidadPropietariaBien?: string;
 }
