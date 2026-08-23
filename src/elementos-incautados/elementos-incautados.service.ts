@@ -275,6 +275,11 @@ export class ElementosIncautadosService {
           dto.fuenteVerificacionHurto === 'DENUNCIA' ? dto.denuncianteDocumento?.trim() || null : null,
         denuncianteTelefono:
           dto.fuenteVerificacionHurto === 'DENUNCIA' ? dto.denuncianteTelefono?.trim() || null : null,
+        // Adenda 2026-08-23 (delitos contra la fe pública): campos
+        // compartidos, sin condición de otro campo -- se guardan tal
+        // cual si vienen.
+        contextoExhibicion: dto.contextoExhibicion?.trim() || null,
+        criteriosSospecha: dto.criteriosSospecha?.trim() || null,
         ...detalle,
       },
       include: {

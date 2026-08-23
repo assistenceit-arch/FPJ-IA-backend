@@ -104,6 +104,17 @@ export class CrearElementoDto {
   @IsString()
   denuncianteTelefono?: string;
 
+  // Adenda 2026-08-23 (módulos Uso de Documento Falso, Falsedad
+  // Personal y Tráfico de Moneda Falsa): campos compartidos entre los
+  // tres.
+  @IsOptional()
+  @IsString()
+  contextoExhibicion?: string;
+
+  @IsOptional()
+  @IsString()
+  criteriosSospecha?: string;
+
   // ── Exclusivos de SUSTANCIA ──
   @ValidateIf((o) => o.tipoElemento === 'SUSTANCIA')
   @IsNotEmpty()

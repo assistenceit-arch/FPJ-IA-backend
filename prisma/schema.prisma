@@ -548,6 +548,19 @@ model ElementoIncautado {
   denuncianteDocumento String?
   denuncianteTelefono  String?
 
+  // Adenda 2026-08-23 (módulos Uso de Documento Falso, Falsedad
+  // Personal y Tráfico de Moneda Falsa -- "delitos contra la fe
+  // pública"): campos compartidos entre los tres, uso operativo
+  // exclusivo de ese paquete de delitos. contextoExhibicion: por qué
+  // motivo el elemento (documento o dinero) le fue exhibido al
+  // funcionario, o en qué contexto lo interceptó (ej. pagando una
+  // transacción). criteriosSospecha: qué le hizo sospechar de la
+  // falsedad, o qué actividades de corroboración realizó para
+  // establecer que el documento no correspondía a quien lo presentó
+  // (Falsedad Personal).
+  contextoExhibicion String?
+  criteriosSospecha  String?
+
   tipoElemento        String // SUSTANCIA | DINERO | CELULAR | ARMA | OTRO
   descripcionBase     String // RN-006/RN-007: única, generada automáticamente
   ubicacionHallazgo   String

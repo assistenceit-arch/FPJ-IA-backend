@@ -662,6 +662,8 @@ export class DocumentosService {
           denuncianteNombre: e.denuncianteNombre,
           denuncianteDocumento: e.denuncianteDocumento,
           denuncianteTelefono: e.denuncianteTelefono,
+          contextoExhibicion: e.contextoExhibicion,
+          criteriosSospecha: e.criteriosSospecha,
         })),
         participacionHechos: c.participacionHechos,
         comportamientoAbordaje: c.comportamientoAbordaje,
@@ -713,6 +715,8 @@ export class DocumentosService {
         denuncianteNombre: e.denuncianteNombre,
         denuncianteDocumento: e.denuncianteDocumento,
         denuncianteTelefono: e.denuncianteTelefono,
+        contextoExhibicion: e.contextoExhibicion,
+        criteriosSospecha: e.criteriosSospecha,
       })),
       // Adenda 2026-08-20: testigos de los hechos (Sección 5).
       testigos: testigos.map((t) => ({

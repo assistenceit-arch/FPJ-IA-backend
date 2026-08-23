@@ -22,6 +22,11 @@ export interface ElementoNarracion {
   denuncianteNombre?: string | null;
   denuncianteDocumento?: string | null;
   denuncianteTelefono?: string | null;
+  // Adenda 2026-08-23 (delitos contra la fe pública: Uso de Documento
+  // Falso, Falsedad Personal, Tráfico de Moneda Falsa): campos
+  // compartidos entre los tres.
+  contextoExhibicion?: string | null;
+  criteriosSospecha?: string | null;
 }
 
 export interface IntervinienteNarracion {
