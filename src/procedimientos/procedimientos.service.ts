@@ -11,6 +11,21 @@ import { CreateProcedimientoDto } from './dto/create-procedimiento.dto';
 import { UpdateProcedimientoDto } from './dto/update-procedimiento.dto';
 import { calcularDemoraExistente, obtenerCapturaMasAntigua, validarOrdenFechas } from '../actuaciones-procedimiento/demora.util';
 
+// Adenda 2026-08-23: política de retención -- todo procedimiento se
+// borra físicamente 7 días después de fechaCreacion (ver
+// LimpiezaAutomaticaService, que ejecuta el borrado real). Esta función
+// solo calcula cuántos días faltan para que eso ocurra, para que el
+// frontend pueda mostrar el aviso a partir del día 5 (cuando quedan 2
+// días o menos). Puede devolver un número negativo en el borde exacto
+// entre que se cumple el plazo y que la purga horaria todavía no ha
+// corrido -- el frontend debe tratar cualquier valor <= 0 igual que 0.
+function diasParaEliminacion(fechaCreacion: Date): number {
+  const limite = new Date(fechaCreacion);
+  limite.setDate(limite.getDate() + 7);
+  const msPorDia = 1000 * 60 * 60 * 24;
+  return Math.ceil((limite.getTime() - Date.now()) / msPorDia);
+}
+
 @Injectable()
 export class ProcedimientosService {
   constructor(
@@ -59,11 +74,12 @@ export class ProcedimientosService {
   }
 
   // WF-AUT-005: cada usuario ve únicamente sus propios procedimientos.
-  findAll(usuarioId: string) {
-    return this.prisma.procedimiento.findMany({
+  async findAll(usuarioId: string) {
+    const procedimientos = await this.prisma.procedimiento.findMany({
       where: { usuarioId, activo: true },
       orderBy: { fechaCreacion: 'desc' },
     });
+    return procedimientos.map((p) => ({ ...p, diasParaEliminacion: diasParaEliminacion(p.fechaCreacion) }));
   }
 
   async findOne(id: string, usuarioId: string, rol?: string) {
@@ -86,13 +102,14 @@ export class ProcedimientosService {
     const completo = await this.todosLosBloquesCompletos(procedimiento);
     const estadoCorrecto = completo ? 'Finalizado' : 'Borrador';
     if (procedimiento.estado !== estadoCorrecto) {
-      return this.prisma.procedimiento.update({
+      const actualizado = await this.prisma.procedimiento.update({
         where: { id },
         data: { estado: estadoCorrecto },
       });
+      return { ...actualizado, diasParaEliminacion: diasParaEliminacion(actualizado.fechaCreacion) };
     }
 
-    return procedimiento;
+    return { ...procedimiento, diasParaEliminacion: diasParaEliminacion(procedimiento.fechaCreacion) };
   }
 
   private textoCompleto(v: string | null | undefined): boolean {

@@ -790,7 +790,7 @@ model DocumentoGenerado {
   id String @id @default(uuid())
 
   procedimientoId String        @map("procedimiento_id")
-  procedimiento   Procedimiento @relation(fields: [procedimientoId], references: [id])
+  procedimiento   Procedimiento @relation(fields: [procedimientoId], references: [id], onDelete: Cascade)
 
   tipoDocumento String // FPJ5 | FPJ6 | ACTA | FPJ7 | FPJ8
   capturadoId   String?
@@ -814,7 +814,7 @@ model Pago {
   id String @id @default(uuid())
 
   procedimientoId String        @unique
-  procedimiento   Procedimiento @relation(fields: [procedimientoId], references: [id])
+  procedimiento   Procedimiento @relation(fields: [procedimientoId], references: [id], onDelete: Cascade)
 
   // Adenda 2026-08-06: fechaPago/medioPago/referenciaPago se quitan --
   // a solicitud del usuario, el funcionario ya no diligencia un

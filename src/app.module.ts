@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 
 import configuration from './config/app.config';
 import { environmentValidationSchema } from './config/environment.validation';
@@ -21,6 +22,7 @@ import { ConfiguracionPagosModule } from './configuracion-pagos/configuracion-pa
 import { PagosModule } from './pagos/pagos.module';
 import { DocumentosModule } from './documentos/documentos.module';
 import { AdminModule } from './admin/admin.module';
+import { LimpiezaAutomaticaModule } from './limpieza-automatica/limpieza-automatica.module';
 // Fases 0-3 completas. Fase 4 en curso: motor de generación de documentos
 // Word. Primer documento: Acta de Incautación de Elementos (por
 // interviniente). Pendientes: FPJ-5, FPJ-6, FPJ-7, FPJ-8.
@@ -32,6 +34,10 @@ import { AdminModule } from './admin/admin.module';
       load: [configuration],
       validationSchema: environmentValidationSchema,
     }),
+    // Adenda 2026-08-23: habilita @Cron() en toda la aplicación --
+    // necesario para el borrado automático de procedimientos por
+    // política de retención (ver LimpiezaAutomaticaModule).
+    ScheduleModule.forRoot(),
     AuthModule,
     UsuariosModule,
     PrismaModule,
@@ -49,6 +55,7 @@ import { AdminModule } from './admin/admin.module';
     PagosModule,
     DocumentosModule,
     AdminModule,
+    LimpiezaAutomaticaModule,
   ],
   controllers: [AppController],
   providers: [],
