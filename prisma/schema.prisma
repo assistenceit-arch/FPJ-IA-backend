@@ -461,6 +461,30 @@ model Victima {
   // llegó con vida).
   fallecio Boolean?
 
+  // Adenda 2026-08-23 (módulo Secuestro): exclusivo de este delito.
+  // Cubre tanto secuestro simple (art. 168 CP) como extorsivo (art.
+  // 169 CP) -- la finalidad se describe en texto libre, sin campo de
+  // clasificación (a solicitud del usuario, mismo criterio que
+  // consumado/tentativa en Hurto: no calificar jurídicamente cuál
+  // aplica). No hay campo de fecha/hora de finalización -- se asume
+  // que la liberación coincide con el momento del procedimiento
+  // (intervención policial), ya capturado en la cronología general.
+  fechaInicioPrivacionLibertad DateTime?
+  horaInicioPrivacionLibertad  String?
+  finalidadPrivacionLibertad   String?
+  lugaresRetencion             String?
+
+  // Adenda 2026-08-23 (módulo Extorsión): exclusivo de este delito.
+  // Todos los campos son texto libre para poder resumir varias
+  // exigencias si las hubo en momentos distintos (a solicitud del
+  // usuario, sin necesidad de una lista estructurada).
+  montoExigido         String?
+  motivoExigencia      String?
+  medioExigencia       String?
+  existenAmenazas      Boolean?
+  descripcionAmenazas  String?
+  lugarEntregaExigido  String?
+
   elementosIncautados ElementoIncautado[]
 
   createdAt DateTime @default(now())

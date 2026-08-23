@@ -200,4 +200,51 @@ export class CrearVictimaDto {
   @IsOptional()
   @IsBoolean()
   fallecio?: boolean;
+
+  // Adenda 2026-08-23 (módulo Secuestro): exclusivo de este delito.
+  @ValidateIf(
+    (o) =>
+      o.fechaInicioPrivacionLibertad !== undefined &&
+      o.fechaInicioPrivacionLibertad !== null &&
+      o.fechaInicioPrivacionLibertad !== '',
+  )
+  @IsDateString()
+  fechaInicioPrivacionLibertad?: string;
+
+  @IsOptional()
+  @IsString()
+  horaInicioPrivacionLibertad?: string;
+
+  @IsOptional()
+  @IsString()
+  finalidadPrivacionLibertad?: string;
+
+  @IsOptional()
+  @IsString()
+  lugaresRetencion?: string;
+
+  // Adenda 2026-08-23 (módulo Extorsión): exclusivo de este delito.
+  @IsOptional()
+  @IsString()
+  montoExigido?: string;
+
+  @IsOptional()
+  @IsString()
+  motivoExigencia?: string;
+
+  @IsOptional()
+  @IsString()
+  medioExigencia?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  existenAmenazas?: boolean;
+
+  @ValidateIf((o) => o.existenAmenazas === true)
+  @IsString()
+  descripcionAmenazas?: string;
+
+  @IsOptional()
+  @IsString()
+  lugarEntregaExigido?: string;
 }

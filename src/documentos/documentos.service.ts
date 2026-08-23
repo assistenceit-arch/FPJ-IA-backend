@@ -775,6 +775,20 @@ export class DocumentosService {
         descripcionMedidasProteccion: v.descripcionMedidasProteccion,
         existenAntecedentesViolencia: v.existenAntecedentesViolencia,
         descripcionAntecedentesViolencia: v.descripcionAntecedentesViolencia,
+        // Adenda 2026-08-23 (módulo Secuestro).
+        fechaInicioPrivacionLibertad: v.fechaInicioPrivacionLibertad
+          ? v.fechaInicioPrivacionLibertad.toISOString()
+          : null,
+        horaInicioPrivacionLibertad: v.horaInicioPrivacionLibertad,
+        finalidadPrivacionLibertad: v.finalidadPrivacionLibertad,
+        lugaresRetencion: v.lugaresRetencion,
+        // Adenda 2026-08-23 (módulo Extorsión).
+        montoExigido: v.montoExigido,
+        motivoExigencia: v.motivoExigencia,
+        medioExigencia: v.medioExigencia,
+        existenAmenazas: v.existenAmenazas,
+        descripcionAmenazas: v.descripcionAmenazas,
+        lugarEntregaExigido: v.lugarEntregaExigido,
       })),
       actuaciones: {
         autoridadReceptora: actuaciones.autoridadReceptora,

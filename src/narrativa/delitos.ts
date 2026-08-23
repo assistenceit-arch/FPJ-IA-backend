@@ -27,6 +27,8 @@ export const DELITOS_SOPORTADOS: Record<string, string> = {
   'Uso de Documento Falso': 'uso-documento-falso',
   'Falsedad Personal': 'falsedad-personal',
   'Tráfico de Moneda Falsa': 'trafico-moneda-falsa',
+  'Secuestro': 'secuestro',
+  'Extorsión': 'extorsion',
 };
 
 export function prefijoPromptPorDelito(delito: string): string {
