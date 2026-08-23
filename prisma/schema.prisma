@@ -447,6 +447,20 @@ model Victima {
   existenAntecedentesViolencia       Boolean?
   descripcionAntecedentesViolencia   String?
 
+  // Adenda 2026-08-23 (módulo Homicidio): exclusivo de este delito.
+  // Reutiliza por completo el bloque de lesiones de arriba (quién,
+  // dónde, con qué, qué causó) -- lo único que agrega es si el
+  // desenlace fue la muerte. Soporta tanto el caso consumado
+  // (fallecio = true) como la tentativa (fallecio = false, la víctima
+  // sobrevivió a pesar de la agresión), a solicitud del usuario. El
+  // traslado del cuerpo se reutiliza también: trasladoCentroAsistencial
+  // = false implica que falleció en el lugar de los hechos (remisión
+  // directa a Medicina Legal); si fue trasladada -- viva o ya fallecida
+  // -- se usa centroAsistencial para registrar a dónde (puede ser
+  // "Medicina Legal [ciudad]" o el nombre del centro asistencial si
+  // llegó con vida).
+  fallecio Boolean?
+
   elementosIncautados ElementoIncautado[]
 
   createdAt DateTime @default(now())

@@ -757,6 +757,8 @@ export class DocumentosService {
         trasladoCentroAsistencial: v.trasladoCentroAsistencial,
         centroAsistencial: v.centroAsistencial,
         motivoTraslado: v.motivoTraslado,
+        // Adenda 2026-08-23 (módulo Homicidio).
+        fallecio: v.fallecio,
         // Adenda 2026-08-22 (módulo Violencia contra Servidor Público).
         entidadServidorPublico: v.entidadServidorPublico,
         cargoServidorPublico: v.cargoServidorPublico,

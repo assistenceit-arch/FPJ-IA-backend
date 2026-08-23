@@ -194,4 +194,10 @@ export class CrearVictimaDto {
   @ValidateIf((o) => o.existenAntecedentesViolencia === true)
   @IsString()
   descripcionAntecedentesViolencia?: string;
+
+  // Adenda 2026-08-23 (módulo Homicidio): exclusivo de este delito.
+  // Soporta también la tentativa (fallecio = false).
+  @IsOptional()
+  @IsBoolean()
+  fallecio?: boolean;
 }

@@ -150,6 +150,10 @@ export interface VictimaNarracion {
   trasladoCentroAsistencial?: boolean | null;
   centroAsistencial?: string | null;
   motivoTraslado?: string | null;
+  // Adenda 2026-08-23 (módulo Homicidio): exclusivo de este delito.
+  // Soporta tanto el caso consumado como la tentativa (fallecio =
+  // false, la víctima sobrevivió a pesar de la agresión).
+  fallecio?: boolean | null;
   // Adenda 2026-08-22 (módulo Violencia contra Servidor Público):
   // exclusivo de este delito.
   entidadServidorPublico?: string | null;
