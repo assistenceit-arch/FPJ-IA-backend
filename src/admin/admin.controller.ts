@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, Param, Patch, Query, UseGuards } from '@
 import { ProcedimientosService } from '../procedimientos/procedimientos.service';
 import { PagosService } from '../pagos/pagos.service';
 import { UsuariosService } from '../usuarios/usuarios.service';
+import { AuditoriaService } from '../auditoria/auditoria.service';
 import { ExonerarPagoDto } from './dto/exonerar-pago.dto';
 import { DesbloqueoEdicionDto } from './dto/desbloqueo-edicion.dto';
 import { CambiarRolDto } from './dto/cambiar-rol.dto';
@@ -23,6 +24,7 @@ export class AdminController {
     private readonly procedimientosService: ProcedimientosService,
     private readonly pagosService: PagosService,
     private readonly usuariosService: UsuariosService,
+    private readonly auditoriaService: AuditoriaService,
   ) {}
 
   // ── Procedimientos / exoneración de pago ──
@@ -91,5 +93,14 @@ export class AdminController {
   @Delete('usuarios/:id')
   eliminarUsuario(@Param('id') id: string) {
     return this.usuariosService.eliminar(id);
+  }
+
+  // ── Auditoría ──
+  // Adenda 2026-08-24: antes solo se podía consultar con SQL directo a
+  // la base de datos. `busqueda` filtra por coincidencia parcial contra
+  // el registro afectado, el usuario, o la descripción del evento.
+  @Get('auditoria')
+  listarAuditoria(@Query('busqueda') busqueda?: string, @Query('pagina') pagina?: string) {
+    return this.auditoriaService.listarPaginado(busqueda, Number(pagina) || 1, 20);
   }
 }

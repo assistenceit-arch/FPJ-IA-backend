@@ -33,4 +33,36 @@ export class AuditoriaService {
       },
     });
   }
+
+  // Adenda 2026-08-24: consulta paginada para el panel de administración
+  // -- hasta ahora la única forma de ver estos registros era una
+  // consulta SQL directa a la base de datos. `busqueda` filtra por
+  // coincidencia parcial (insensible a mayúsculas) contra el
+  // identificador del registro afectado, el usuario que ejecutó la
+  // acción, o la descripción del evento -- cubre el caso más común de
+  // "quiero ver todo lo que pasó con el procedimiento EST-2026-000015"
+  // sin necesitar tres filtros separados.
+  async listarPaginado(busqueda?: string, pagina = 1, porPagina = 20) {
+    const where = busqueda
+      ? {
+          OR: [
+            { registroAfectado: { contains: busqueda, mode: 'insensitive' as const } },
+            { usuario: { contains: busqueda, mode: 'insensitive' as const } },
+            { descripcionEvento: { contains: busqueda, mode: 'insensitive' as const } },
+          ],
+        }
+      : {};
+
+    const [datos, total] = await Promise.all([
+      this.prisma.auditoriaEvento.findMany({
+        where,
+        orderBy: { fechaEvento: 'desc' },
+        skip: (pagina - 1) * porPagina,
+        take: porPagina,
+      }),
+      this.prisma.auditoriaEvento.count({ where }),
+    ]);
+
+    return { datos, total, pagina, totalPaginas: Math.max(1, Math.ceil(total / porPagina)) };
+  }
 }
