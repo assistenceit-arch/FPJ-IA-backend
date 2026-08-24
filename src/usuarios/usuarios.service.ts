@@ -12,6 +12,9 @@ import { CorreoService } from '../correo/correo.service';
 import * as bcrypt from 'bcrypt';
 
 const HORAS_VALIDEZ_TOKEN = 24;
+// Adenda 2026-08-24: constantes de seguridad definidas con el usuario.
+const MAX_INTENTOS_FALLIDOS_LOGIN = 5;
+const HORAS_VALIDEZ_TOKEN_RECUPERACION = 1;
 
 @Injectable()
 export class UsuariosService {
@@ -161,6 +164,7 @@ export class UsuariosService {
           rol: true,
           activo: true,
           correoVerificado: true,
+          bloqueadoPorIntentos: true,
           createdAt: true,
         },
         orderBy: { nombres: 'asc' },
@@ -275,5 +279,141 @@ export class UsuariosService {
         'No se puede dejar el sistema sin ningún administrador activo.',
       );
     }
+  }
+
+  // ── Adenda 2026-08-24: bloqueo por intentos fallidos de login ──
+
+  /**
+   * Suma un intento fallido. Al llegar a MAX_INTENTOS_FALLIDOS_LOGIN,
+   * bloquea la cuenta (bloqueadoPorIntentos = true) -- deliberadamente
+   * separado de `activo`, que representa un bloqueo manual por un
+   * administrador. Se cuenta por cuenta (correo), no por IP, a
+   * solicitud del usuario.
+   */
+  async registrarIntentoFallido(id: string) {
+    const usuario = await this.prisma.usuario.update({
+      where: { id },
+      data: { intentosFallidosLogin: { increment: 1 } },
+      select: { intentosFallidosLogin: true },
+    });
+
+    if (usuario.intentosFallidosLogin >= MAX_INTENTOS_FALLIDOS_LOGIN) {
+      await this.prisma.usuario.update({
+        where: { id },
+        data: { bloqueadoPorIntentos: true },
+      });
+    }
+
+    return MAX_INTENTOS_FALLIDOS_LOGIN - usuario.intentosFallidosLogin;
+  }
+
+  async reiniciarIntentosFallidos(id: string) {
+    await this.prisma.usuario.update({
+      where: { id },
+      data: { intentosFallidosLogin: 0 },
+    });
+  }
+
+  /**
+   * Desbloqueo manual por un administrador (panel de administración) --
+   * distinto de cambiarEstado (activo), que es para uso irregular.
+   */
+  async desbloquearPorIntentos(id: string) {
+    const usuario = await this.prisma.usuario.findUnique({ where: { id } });
+    if (!usuario) {
+      throw new NotFoundException('Usuario no encontrado.');
+    }
+
+    return this.prisma.usuario.update({
+      where: { id },
+      data: { bloqueadoPorIntentos: false, intentosFallidosLogin: 0 },
+      select: {
+        id: true,
+        nombres: true,
+        apellidos: true,
+        correo: true,
+        rol: true,
+        bloqueadoPorIntentos: true,
+      },
+    });
+  }
+
+  // ── Adenda 2026-08-24: segundo factor de autenticación por correo ──
+
+  async guardarCodigo2FA(id: string, codigo: string, expira: Date) {
+    await this.prisma.usuario.update({
+      where: { id },
+      data: { codigo2FA: codigo, codigo2FAExpira: expira },
+    });
+  }
+
+  async limpiarCodigo2FA(id: string) {
+    await this.prisma.usuario.update({
+      where: { id },
+      data: { codigo2FA: null, codigo2FAExpira: null },
+    });
+  }
+
+  // ── Adenda 2026-08-24: recuperación de contraseña ──
+
+  /**
+   * Genera el token de recuperación y envía el correo. Siempre responde
+   * con éxito genérico desde el controlador (AuthController), exista o
+   * no la cuenta -- no se debe revelar qué correos están registrados.
+   */
+  async solicitarRecuperacion(correoDestino: string) {
+    const usuario = await this.buscarPorCorreo(correoDestino);
+    if (!usuario || usuario.eliminado) {
+      return; // silencioso a propósito -- ver nota arriba.
+    }
+
+    const token = crypto.randomUUID();
+    const expira = new Date(Date.now() + HORAS_VALIDEZ_TOKEN_RECUPERACION * 60 * 60 * 1000);
+
+    await this.prisma.usuario.update({
+      where: { id: usuario.id },
+      data: { tokenRecuperacion: token, tokenRecuperacionExpira: expira },
+    });
+
+    await this.correo.enviarRecuperacion(usuario.correo, usuario.nombres, token);
+  }
+
+  /**
+   * Restablece la contraseña a partir del token recibido por correo.
+   * También desbloquea la cuenta si estaba bloqueada por intentos
+   * fallidos -- demostrar que se puede restablecer la contraseña
+   * (acceso al correo registrado) es suficiente prueba de que es el
+   * dueño legítimo de la cuenta. NO revierte un bloqueo manual por un
+   * administrador (`activo`), que exige juicio humano.
+   */
+  async restablecerPassword(token: string, nuevaPassword: string) {
+    if (!token) {
+      throw new BadRequestException('Falta el token de recuperación.');
+    }
+
+    const usuario = await this.prisma.usuario.findUnique({ where: { tokenRecuperacion: token } });
+    if (!usuario) {
+      throw new BadRequestException('El enlace de recuperación no es válido.');
+    }
+    if (!usuario.tokenRecuperacionExpira || usuario.tokenRecuperacionExpira < new Date()) {
+      throw new BadRequestException(
+        'El enlace de recuperación venció. Solicita uno nuevo.',
+      );
+    }
+
+    const passwordHash = await bcrypt.hash(nuevaPassword, 10);
+
+    await this.prisma.usuario.update({
+      where: { id: usuario.id },
+      data: {
+        password: passwordHash,
+        tokenRecuperacion: null,
+        tokenRecuperacionExpira: null,
+        bloqueadoPorIntentos: false,
+        intentosFallidosLogin: 0,
+      },
+    });
+
+    return { mensaje: 'Contraseña actualizada. Ya puedes iniciar sesión.' };
   }
 }

@@ -88,6 +88,13 @@ export class AdminController {
     return this.usuariosService.cambiarEstado(id, dto.activo);
   }
 
+  // Adenda 2026-08-24: desbloqueo manual tras 5 intentos fallidos de
+  // login -- distinto de /estado (bloqueo por uso irregular).
+  @Patch('usuarios/:id/desbloquear-intentos')
+  desbloquearPorIntentos(@Param('id') id: string) {
+    return this.usuariosService.desbloquearPorIntentos(id);
+  }
+
   // RT-006/AT-005: eliminación lógica; el servicio ya protege que no
   // quede el sistema sin ningún administrador activo.
   @Delete('usuarios/:id')

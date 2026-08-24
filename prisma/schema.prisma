@@ -41,6 +41,29 @@ model Usuario {
   eliminado   Boolean   @default(false)
   eliminadoEn DateTime?
 
+  // Adenda 2026-08-24: bloqueo automático por intentos fallidos de
+  // inicio de sesión -- deliberadamente separado de `activo` (que
+  // representa un bloqueo manual por un administrador ante uso
+  // irregular). Se cuenta por cuenta (correo), no por IP, a solicitud
+  // del usuario. Al llegar a 5 intentos fallidos, bloqueadoPorIntentos
+  // pasa a true y el inicio de sesión se deniega hasta que un
+  // administrador lo desbloquee explícitamente (o el propio usuario
+  // restablece su contraseña con éxito, que también lo desbloquea).
+  intentosFallidosLogin Int     @default(0)
+  bloqueadoPorIntentos  Boolean @default(false)
+
+  // Adenda 2026-08-24: segundo factor de autenticación por código
+  // enviado al correo -- obligatorio para todos los funcionarios, a
+  // solicitud del usuario. codigo2FA se genera en cada login exitoso
+  // de usuario/contraseña y se limpia al validarse o al vencer.
+  codigo2FA       String?
+  codigo2FAExpira DateTime?
+
+  // Adenda 2026-08-24: recuperación de contraseña por enlace enviado
+  // al correo, mismo patrón que tokenVerificacion. Vence en 1 hora.
+  tokenRecuperacion       String?   @unique
+  tokenRecuperacionExpira DateTime?
+
   procedimientos Procedimiento[]
 
   createdAt DateTime @default(now())

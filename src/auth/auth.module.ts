@@ -7,6 +7,7 @@ import { JwtStrategy } from './strategies/jwt/jwt.strategy';
 
 import { UsuariosModule } from '../usuarios/usuarios.module';
 import { StrategiesModule } from './strategies/strategies.module';
+import { CorreoModule } from '../correo/correo.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { StrategiesModule } from './strategies/strategies.module';
       },
     }),
     StrategiesModule,
+    CorreoModule,
   ],
   controllers: [AuthController],
   providers: [

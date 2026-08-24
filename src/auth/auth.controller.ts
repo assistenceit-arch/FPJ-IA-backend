@@ -18,6 +18,10 @@ export class AuthController {
     private readonly usuariosService: UsuariosService,
   ) {}
 
+  // Adenda 2026-08-24: primer paso del login (usuario/contraseña). Ya
+  // NO emite el token -- si las credenciales son correctas, envía el
+  // código de segundo factor por correo y responde indicando que hace
+  // falta verificarlo. El token real se emite en /auth/verificar-2fa.
   @Post('login')
   async login(
     @Body() body: {
@@ -30,7 +34,20 @@ export class AuthController {
       body.password,
     );
 
-    return this.authService.login(usuario);
+    await this.authService.solicitarCodigo2FA(usuario);
+
+    return {
+      requiere2FA: true,
+      correo: usuario.correo,
+      mensaje: 'Te enviamos un código de verificación a tu correo.',
+    };
+  }
+
+  // Adenda 2026-08-24: segundo paso del login -- aquí sí se emite el
+  // token JWT si el código es correcto.
+  @Post('verificar-2fa')
+  async verificar2FA(@Body() body: { correo: string; codigo: string }) {
+    return this.authService.verificarCodigo2FA(body.correo, body.codigo);
   }
 
   // Adenda 2026-08-06: registro autónomo desde la pantalla de login,
@@ -46,6 +63,22 @@ export class AuthController {
   @Get('verificar-correo')
   async verificarCorreo(@Query('token') token: string) {
     return this.usuariosService.verificarCorreo(token);
+  }
+
+  // Adenda 2026-08-24: recuperación de contraseña. Siempre responde con
+  // el mismo mensaje genérico, exista o no la cuenta -- no se debe
+  // revelar qué correos están registrados en el sistema.
+  @Post('olvide-password')
+  async olvidePassword(@Body() body: { correo: string }) {
+    await this.usuariosService.solicitarRecuperacion(body.correo);
+    return {
+      mensaje: 'Si el correo está registrado, te enviamos un enlace para restablecer tu contraseña.',
+    };
+  }
+
+  @Post('restablecer-password')
+  async restablecerPassword(@Body() body: { token: string; nuevaPassword: string }) {
+    return this.usuariosService.restablecerPassword(body.token, body.nuevaPassword);
   }
 
   @UseGuards(JwtAuthGuard)
