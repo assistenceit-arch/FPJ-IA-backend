@@ -1,9 +1,21 @@
+// Adenda 2026-08-24: debe ser la primera línea del archivo -- Sentry
+// necesita inicializarse antes que cualquier otro import para poder
+// instrumentar correctamente los módulos de Node.js.
+import './instrument';
+
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { SentryGlobalFilter } from '@sentry/nestjs/setup';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Adenda 2026-08-24: debe registrarse antes que cualquier otro filtro
+  // de excepciones para poder capturar y reportar los errores a Sentry.
+  // Si SENTRY_DSN no está configurado, este filtro simplemente no
+  // reporta nada (Sentry.init() nunca se llamó, ver instrument.ts).
+  app.useGlobalFilters(new SentryGlobalFilter());
 
   app.setGlobalPrefix('api');
 

@@ -25,4 +25,9 @@ export const environmentValidationSchema = Joi.object({
   SMTP_PASS: Joi.string().optional(),
   SMTP_FROM: Joi.string().optional(),
   FRONTEND_URL: Joi.string().optional(),
+
+  // Adenda 2026-08-24: monitoreo y alertas de errores (Sentry).
+  // Opcional -- si no está configurada, Sentry simplemente no se
+  // activa (mismo criterio que SMTP_HOST).
+  SENTRY_DSN: Joi.string().optional(),
 });

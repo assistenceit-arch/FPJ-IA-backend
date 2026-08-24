@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
+import { SentryModule } from '@sentry/nestjs/setup';
 
 import configuration from './config/app.config';
 import { environmentValidationSchema } from './config/environment.validation';
@@ -29,6 +30,9 @@ import { LimpiezaAutomaticaModule } from './limpieza-automatica/limpieza-automat
 
 @Module({
   imports: [
+    // Adenda 2026-08-24: debe ser el primer módulo importado para que
+    // la instrumentación automática de Sentry funcione correctamente.
+    SentryModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
       load: [configuration],
