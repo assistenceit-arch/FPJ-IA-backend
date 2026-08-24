@@ -4,18 +4,25 @@
 import './instrument';
 
 import { ValidationPipe } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
+import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SentryGlobalFilter } from '@sentry/nestjs/setup';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Adenda 2026-08-24: debe registrarse antes que cualquier otro filtro
-  // de excepciones para poder capturar y reportar los errores a Sentry.
-  // Si SENTRY_DSN no está configurado, este filtro simplemente no
-  // reporta nada (Sentry.init() nunca se llamó, ver instrument.ts).
-  app.useGlobalFilters(new SentryGlobalFilter());
+  // Corrección 2026-08-24: SentryGlobalFilter extiende BaseExceptionFilter
+  // de NestJS, que internamente necesita una referencia al httpAdapter
+  // para poder completar la respuesta HTTP (`applicationRef.isHeadersSent`,
+  // `applicationRef.reply`, etc.). Construirlo con `new SentryGlobalFilter()`
+  // sin argumentos deja esa referencia en undefined -- el filtro reportaba
+  // el error a Sentry correctamente, pero después fallaba al intentar
+  // responderle al usuario, convirtiendo CUALQUIER error controlado de la
+  // aplicación (401, 400, 403, 404, 409...) en un 500 genérico. Afectaba a
+  // toda la aplicación, no solo al login -- se obtiene el httpAdapter real
+  // vía HttpAdapterHost, que sí está disponible en este punto del arranque.
+  const { httpAdapter } = app.get(HttpAdapterHost);
+  app.useGlobalFilters(new SentryGlobalFilter(httpAdapter));
 
   app.setGlobalPrefix('api');
 
