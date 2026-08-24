@@ -76,6 +76,7 @@ export class VictimasService {
       tablaAfectada: 'victimas',
       registroAfectado: victima.id,
       descripcionEvento: `Registro de víctima en el procedimiento ${procedimientoId}`,
+      procedimientoId,
     });
 
     return victima;
@@ -130,6 +131,7 @@ export class VictimasService {
       tablaAfectada: 'victimas',
       registroAfectado: actualizado.id,
       descripcionEvento: `Actualización de la víctima ${actualizado.id}`,
+      procedimientoId,
     });
 
     return actualizado;
@@ -162,6 +164,7 @@ export class VictimasService {
       tablaAfectada: 'victimas',
       registroAfectado: victimaId,
       descripcionEvento: `Eliminación de la víctima ${victimaId}`,
+      procedimientoId,
     });
 
     return { eliminado: true };

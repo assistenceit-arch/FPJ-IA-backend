@@ -102,6 +102,7 @@ export class PagosService {
       tablaAfectada: 'pagos',
       registroAfectado: pago.id,
       descripcionEvento: `${existente ? 'Nuevo pago registrado (reintento tras rechazo anterior)' : 'Pago registrado'} por $${valor} para el procedimiento ${procedimientoId} (${procedimiento.tipoProcedimiento})`,
+      procedimientoId,
     });
 
     return pago;
@@ -195,6 +196,7 @@ export class PagosService {
       tablaAfectada: 'pagos',
       registroAfectado: actualizado.id,
       descripcionEvento: `Pago ${dto.estadoPago.toLowerCase()} para el procedimiento ${procedimientoId}${dto.observacion ? `: ${dto.observacion}` : ''}`,
+      procedimientoId,
     });
 
     return actualizado;

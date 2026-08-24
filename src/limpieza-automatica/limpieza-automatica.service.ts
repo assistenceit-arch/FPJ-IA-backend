@@ -73,6 +73,8 @@ export class LimpiezaAutomaticaService {
           tablaAfectada: 'procedimientos',
           registroAfectado: procedimiento.id,
           descripcionEvento: `Borrado automático por política de retención (7 días): procedimiento ${procedimiento.numeroInterno ?? procedimiento.id}, delito ${procedimiento.delito}, estado ${procedimiento.estado} al momento del borrado.`,
+          procedimientoId: procedimiento.id,
+          numeroInterno: procedimiento.numeroInterno ?? undefined,
         });
 
         await this.prisma.procedimiento.delete({ where: { id: procedimiento.id } });

@@ -880,5 +880,24 @@ model AuditoriaEvento {
   registroAfectado  String
   descripcionEvento String
 
+  // Adenda 2026-08-24: número de caso (ej. EST-2026-000015) copiado al
+  // momento del evento -- se guarda como copia propia, no se resuelve
+  // con un JOIN al consultar, porque el procedimiento puede ya no
+  // existir cuando se consulte (borrado por la política de retención
+  // de 7 días). procedimientoId se conserva igual, para poder filtrar
+  // "todo lo de este procedimiento" incluso si nunca tuvo numeroInterno
+  // asignado. Ambos nullable porque no todo evento de auditoría está
+  // necesariamente ligado a un procedimiento.
+  procedimientoId String?
+  numeroInterno   String?
+
+  // A solicitud del usuario: la sección de Auditoría del panel admin
+  // permite buscar/ordenar por fecha, usuario y número de caso -- sin
+  // estos índices, esas consultas requieren un recorrido completo de
+  // la tabla a medida que crece.
+  @@index([fechaEvento])
+  @@index([usuario])
+  @@index([procedimientoId])
+  @@index([numeroInterno])
   @@map("auditoria_eventos")
 }

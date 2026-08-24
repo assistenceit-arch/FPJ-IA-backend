@@ -68,6 +68,8 @@ export class ProcedimientosService {
       tablaAfectada: 'procedimientos',
       registroAfectado: procedimiento.id,
       descripcionEvento: `Creación del procedimiento ${numeroInterno}`,
+      procedimientoId: procedimiento.id,
+      numeroInterno: numeroInterno ?? undefined,
     });
 
     return procedimiento;
@@ -364,6 +366,8 @@ export class ProcedimientosService {
       tablaAfectada: 'procedimientos',
       registroAfectado: actualizado.id,
       descripcionEvento: `Actualización del procedimiento ${actualizado.numeroInterno ?? actualizado.id}`,
+      procedimientoId: actualizado.id,
+      numeroInterno: actualizado.numeroInterno ?? undefined,
     });
 
     return actualizado;
@@ -402,6 +406,8 @@ export class ProcedimientosService {
       tablaAfectada: 'procedimientos',
       registroAfectado: eliminado.id,
       descripcionEvento: `Eliminación lógica del procedimiento ${eliminado.numeroInterno ?? eliminado.id}`,
+      procedimientoId: eliminado.id,
+      numeroInterno: eliminado.numeroInterno ?? undefined,
     });
 
     return eliminado;
@@ -477,6 +483,8 @@ export class ProcedimientosService {
       tablaAfectada: 'procedimientos',
       registroAfectado: id,
       descripcionEvento: `${exonerado ? 'Exoneración' : 'Reversión de exoneración'} de pago para el procedimiento ${procedimiento.numeroInterno ?? id}`,
+      procedimientoId: id,
+      numeroInterno: procedimiento.numeroInterno ?? undefined,
     });
 
     return actualizado;
@@ -508,6 +516,8 @@ export class ProcedimientosService {
       tablaAfectada: 'procedimientos',
       registroAfectado: id,
       descripcionEvento: `${desbloqueada ? 'Desbloqueo' : 'Rebloqueo'} de edición y regeneración de documentos para el procedimiento ${procedimiento.numeroInterno ?? id}`,
+      procedimientoId: id,
+      numeroInterno: procedimiento.numeroInterno ?? undefined,
     });
 
     return actualizado;

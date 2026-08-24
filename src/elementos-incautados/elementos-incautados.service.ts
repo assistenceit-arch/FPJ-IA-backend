@@ -304,6 +304,7 @@ export class ElementosIncautadosService {
       descripcionEvento: capturadoId
         ? `Registro de elemento (${dto.tipoElemento}) para el interviniente ${capturadoId}`
         : `Registro de elemento colectivo (${dto.tipoElemento}, sin individualizar) para el procedimiento ${procedimientoId}`,
+      procedimientoId,
     });
 
     return elemento;
@@ -383,6 +384,7 @@ export class ElementosIncautadosService {
       tablaAfectada: 'elementos_incautados',
       registroAfectado: elementoId,
       descripcionEvento: `Eliminación del elemento ${elementoId} del interviniente ${capturadoId}`,
+      procedimientoId,
     });
 
     return { eliminado: true };

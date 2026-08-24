@@ -57,6 +57,7 @@ export class CompaneroPatrullaService {
       tablaAfectada: 'companero_patrulla',
       registroAfectado: resultado.id,
       descripcionEvento: `${existente ? 'Actualización' : 'Registro'} del compañero de patrulla del procedimiento ${procedimientoId}`,
+      procedimientoId,
     });
 
     return resultado;
@@ -81,6 +82,7 @@ export class CompaneroPatrullaService {
       tablaAfectada: 'companero_patrulla',
       registroAfectado: existente.id,
       descripcionEvento: `Se retiró el compañero de patrulla del procedimiento ${procedimientoId} (UI-015: es opcional)`,
+      procedimientoId,
     });
 
     return { eliminado: true };

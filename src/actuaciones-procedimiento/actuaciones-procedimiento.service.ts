@@ -102,6 +102,7 @@ export class ActuacionesProcedimientoService {
       tablaAfectada: 'actuaciones_procedimiento',
       registroAfectado: resultado.id,
       descripcionEvento: `${existente ? 'Actualización' : 'Registro'} de las actuaciones procedimentales del procedimiento ${procedimientoId}`,
+      procedimientoId,
     });
 
     return {

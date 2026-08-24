@@ -76,6 +76,7 @@ export class TestigosService {
       tablaAfectada: 'testigos',
       registroAfectado: testigo.id,
       descripcionEvento: `Registro de testigo en el procedimiento ${procedimientoId}`,
+      procedimientoId,
     });
 
     return testigo;
@@ -130,6 +131,7 @@ export class TestigosService {
       tablaAfectada: 'testigos',
       registroAfectado: actualizado.id,
       descripcionEvento: `Actualización del testigo ${actualizado.id}`,
+      procedimientoId,
     });
 
     return actualizado;
@@ -158,6 +160,7 @@ export class TestigosService {
       tablaAfectada: 'testigos',
       registroAfectado: testigoId,
       descripcionEvento: `Eliminación del testigo ${testigoId}`,
+      procedimientoId,
     });
 
     return { eliminado: true };

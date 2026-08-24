@@ -60,6 +60,7 @@ export class LugarProcedimientoService {
       tablaAfectada: 'lugares_procedimiento',
       registroAfectado: resultado.id,
       descripcionEvento: `${existente ? 'Actualización' : 'Registro'} del lugar del procedimiento ${procedimientoId}`,
+      procedimientoId,
     });
 
     return resultado;

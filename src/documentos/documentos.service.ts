@@ -214,6 +214,7 @@ export class DocumentosService {
       tablaAfectada: 'documentos_generados',
       registroAfectado: documentoGenerado.id,
       descripcionEvento: `Acta de Incautación generada (v${version}) para el interviniente ${capturadoId}`,
+      procedimientoId,
     });
 
     return documentoGenerado;
@@ -336,6 +337,7 @@ export class DocumentosService {
       tablaAfectada: 'documentos_generados',
       registroAfectado: documentoGenerado.id,
       descripcionEvento: `Acta de Incautación colectiva generada (v${version}) para el procedimiento ${procedimientoId}, ${capturados.length} capturados`,
+      procedimientoId,
     });
 
     return documentoGenerado;
@@ -500,6 +502,7 @@ export class DocumentosService {
       tablaAfectada: 'documentos_generados',
       registroAfectado: documentoGenerado.id,
       descripcionEvento: `FPJ-6 (Acta de Derechos del ${capturado.tipoInterviniente}) generado (v${version}) para el interviniente ${capturadoId}`,
+      procedimientoId,
     });
 
     return documentoGenerado;
@@ -1157,6 +1160,7 @@ export class DocumentosService {
       tablaAfectada: 'documentos_generados',
       registroAfectado: documentoGenerado.id,
       descripcionEvento: `FPJ-5 generado (v${version}) para el procedimiento ${procedimientoId} con narración automática por IA.`,
+      procedimientoId,
     });
 
     return documentoGenerado;
@@ -1287,6 +1291,7 @@ export class DocumentosService {
       tablaAfectada: 'documentos_generados',
       registroAfectado: documentoGenerado.id,
       descripcionEvento: `FPJ-7 (${numeroEmpEf}) generado (v${version}) para el elemento ${elementoId}.`,
+      procedimientoId,
     });
 
     return documentoGenerado;
@@ -1384,6 +1389,7 @@ export class DocumentosService {
       tablaAfectada: 'documentos_generados',
       registroAfectado: documentoGenerado.id,
       descripcionEvento: `FPJ-8 generado (v${version}) para el elemento ${elementoId}.`,
+      procedimientoId,
     });
 
     return documentoGenerado;

@@ -163,6 +163,7 @@ export class CapturadosService {
         tablaAfectada: 'capturados',
         registroAfectado: capturado.id,
         descripcionEvento: `Registro de interviniente (${resuelto.tipoInterviniente}) en el procedimiento ${procedimientoId}`,
+        procedimientoId,
       });
 
       return capturado;
@@ -245,6 +246,7 @@ export class CapturadosService {
         tablaAfectada: 'capturados',
         registroAfectado: actualizado.id,
         descripcionEvento: `Actualización del interviniente ${actualizado.id}`,
+        procedimientoId,
       });
 
       return actualizado;
@@ -297,6 +299,7 @@ export class CapturadosService {
       tablaAfectada: 'capturados',
       registroAfectado: capturadoId,
       descripcionEvento: `Eliminación del interviniente ${capturadoId} (UI-022)`,
+      procedimientoId,
     });
 
     return { eliminado: true };
@@ -359,6 +362,7 @@ export class CapturadosService {
       tablaAfectada: 'contactos_notificacion',
       registroAfectado: resultado.id,
       descripcionEvento: `${existente ? 'Actualización' : 'Registro'} del contacto de notificación del interviniente ${capturadoId}`,
+      procedimientoId,
     });
 
     return resultado;

@@ -131,6 +131,7 @@ export class FuncionarioActuanteService {
       tablaAfectada: 'funcionario_actuante',
       registroAfectado: resultado.id,
       descripcionEvento: `${existente ? 'Actualización' : 'Registro'} del funcionario actuante del procedimiento ${procedimientoId}`,
+      procedimientoId,
     });
 
     return resultado;
