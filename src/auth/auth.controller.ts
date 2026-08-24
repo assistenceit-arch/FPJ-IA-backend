@@ -10,6 +10,10 @@ import { AuthService } from './auth.service';
 import { UsuariosService } from '../usuarios/usuarios.service';
 import { RegistrarPublicoDto } from '../usuarios/dto/registrar-publico.dto';
 import { JwtAuthGuard } from './guards/jwt-auth/jwt-auth.guard';
+import { LoginDto } from './dto/login.dto';
+import { Verificar2FADto } from './dto/verificar-2fa.dto';
+import { OlvidePasswordDto } from './dto/olvide-password.dto';
+import { RestablecerPasswordDto } from './dto/restablecer-password.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -23,12 +27,7 @@ export class AuthController {
   // código de segundo factor por correo y responde indicando que hace
   // falta verificarlo. El token real se emite en /auth/verificar-2fa.
   @Post('login')
-  async login(
-    @Body() body: {
-      correo: string;
-      password: string;
-    },
-  ) {
+  async login(@Body() body: LoginDto) {
     const usuario = await this.authService.validarUsuario(
       body.correo,
       body.password,
@@ -46,7 +45,7 @@ export class AuthController {
   // Adenda 2026-08-24: segundo paso del login -- aquí sí se emite el
   // token JWT si el código es correcto.
   @Post('verificar-2fa')
-  async verificar2FA(@Body() body: { correo: string; codigo: string }) {
+  async verificar2FA(@Body() body: Verificar2FADto) {
     return this.authService.verificarCodigo2FA(body.correo, body.codigo);
   }
 
@@ -69,7 +68,7 @@ export class AuthController {
   // el mismo mensaje genérico, exista o no la cuenta -- no se debe
   // revelar qué correos están registrados en el sistema.
   @Post('olvide-password')
-  async olvidePassword(@Body() body: { correo: string }) {
+  async olvidePassword(@Body() body: OlvidePasswordDto) {
     await this.usuariosService.solicitarRecuperacion(body.correo);
     return {
       mensaje: 'Si el correo está registrado, te enviamos un enlace para restablecer tu contraseña.',
@@ -77,7 +76,7 @@ export class AuthController {
   }
 
   @Post('restablecer-password')
-  async restablecerPassword(@Body() body: { token: string; nuevaPassword: string }) {
+  async restablecerPassword(@Body() body: RestablecerPasswordDto) {
     return this.usuariosService.restablecerPassword(body.token, body.nuevaPassword);
   }
 

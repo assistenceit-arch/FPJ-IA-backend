@@ -1,6 +1,23 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 
+// Adenda 2026-08-24: el nombre del usuario se insertaba directamente en
+// el HTML del correo (`${nombre}`) sin escapar -- si alguien registrara
+// su nombre con contenido tipo `<script>` o etiquetas HTML, se
+// renderizaría tal cual en el cliente de correo de quien lo reciba (a
+// ellos mismos, en el caso de estos correos, pero es el mismo patrón
+// que se reutilizaría si en el futuro se envía un correo mencionando a
+// un tercero). Se aplica al insertar cualquier valor que provenga de un
+// campo de texto libre del usuario.
+function escaparHtml(texto: string): string {
+  return texto
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 /**
  * Envío de correos transaccionales (por ahora, solo verificación de
  * cuenta del registro autónomo). Usa SMTP genérico vía nodemailer, así
@@ -46,7 +63,7 @@ export class CorreoService {
       to: destino,
       subject: 'Verifica tu correo — PJ | Gestión Digital',
       html: `
-        <p>Hola ${nombre},</p>
+        <p>Hola ${escaparHtml(nombre)},</p>
         <p>Gracias por crear tu cuenta en PJ | Gestión Digital. Confirma tu correo institucional haciendo clic en el siguiente enlace:</p>
         <p><a href="${enlace}">${enlace}</a></p>
         <p>Este enlace vence en 24 horas. Si no creaste esta cuenta, puedes ignorar este mensaje.</p>
@@ -68,7 +85,7 @@ export class CorreoService {
       to: destino,
       subject: 'Tu código de verificación — PJ | Gestión Digital',
       html: `
-        <p>Hola ${nombre},</p>
+        <p>Hola ${escaparHtml(nombre)},</p>
         <p>Tu código de verificación para iniciar sesión es:</p>
         <p style="font-size: 28px; font-weight: bold; letter-spacing: 4px;">${codigo}</p>
         <p>Este código vence en 10 minutos. Si no intentaste iniciar sesión, cambia tu contraseña de inmediato y contacta a un administrador.</p>
@@ -92,7 +109,7 @@ export class CorreoService {
       to: destino,
       subject: 'Recupera tu contraseña — PJ | Gestión Digital',
       html: `
-        <p>Hola ${nombre},</p>
+        <p>Hola ${escaparHtml(nombre)},</p>
         <p>Recibimos una solicitud para restablecer tu contraseña. Haz clic en el siguiente enlace para crear una nueva:</p>
         <p><a href="${enlace}">${enlace}</a></p>
         <p>Este enlace vence en 1 hora. Si no solicitaste este cambio, puedes ignorar este mensaje — tu contraseña actual sigue funcionando.</p>
