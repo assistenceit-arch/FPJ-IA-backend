@@ -682,6 +682,17 @@ export class DocumentosService {
         justificacionEsposas: c.justificacionEsposas,
         tiempoEsposado: c.tiempoEsposado,
         motivoRetiroEsposas: c.motivoRetiroEsposas,
+        // Corrección 2026-08-26: bug real reportado tras prueba en vivo
+        // -- estos 4 campos existen en el modelo y en la interfaz de
+        // narrativa desde que se convirtieron en campos estructurados
+        // (para que la IA dejara de preguntarlos en cada generación),
+        // pero nunca se habían incluido en el contexto que realmente se
+        // le envía al FPJ-5 -- la IA no tenía forma de saber que ya
+        // existía una respuesta, así que seguía preguntando.
+        tieneProcedimientosAnteriores: c.tieneProcedimientosAnteriores,
+        descripcionProcedimientosAnteriores: c.descripcionProcedimientosAnteriores,
+        perteneceGrupoDelincuencial: c.perteneceGrupoDelincuencial,
+        descripcionGrupoDelincuencial: c.descripcionGrupoDelincuencial,
         presentaLesiones: c.presentaLesiones,
         descripcionLesiones: c.descripcionLesiones,
         parteCuerpoLesion: c.parteCuerpoLesion,

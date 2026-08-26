@@ -37,9 +37,15 @@ Verificar:
 
 **Existencia de cámaras y de testigos**: estos dos datos ya NO se preguntan en esta etapa — se diligencian como campos estructurados en el formulario (existencia de cámaras en el Bloque 3 - Lugar del Procedimiento; existencia de testigos en el Bloque 5 - Actuaciones, con el listado de Testigo si los hay). Adenda 2026-08-22: antes la IA los preguntaba en cada generación de narrativa aunque ya se conociera la respuesta — bug real reportado tras caso en vivo. Usa directamente los valores ya capturados (`lugar.existenCamaras`/`lugar.descripcionCamaras` y el listado de testigos) sin volver a solicitarlos al usuario.
 
+Corrección 2026-08-26: al igual que con el uso de esposas (numeral 7), "usar directamente los valores ya capturados" significa que, cuando `existenCamaras = true` o exista al menos un testigo en el listado, el relato **debe mencionarlo explícitamente** -- no basta con no volver a preguntarlo; omitir la mención en el texto final cuando el dato fue suministrado es un error de redacción.
+
 La información relacionada con cámaras y testigos deberá integrarse preferiblemente al final de la narración, salvo que tenga relevancia directa durante el procedimiento (por ejemplo, cuando la ubicación del sospechoso se logró a partir de una cámara).
 
 La verificación de establecimientos educativos, parques o lugares de alta afluencia **no es un criterio transversal**: cada módulo específico determina si es relevante para su delito (por ejemplo, es central en estupefacientes; no es una verificación obligatoria en hurto).
+
+**Antecedentes y pertenencia a grupo delincuencial**: corrección 2026-08-26, mismo patrón y misma causa que cámaras/testigos -- bug real reportado tras prueba en vivo. Estos datos ya NO se preguntan en esta etapa: se diligencian como campos estructurados por cada persona capturada o aprehendida (¿se tiene conocimiento de procedimientos anteriores?, ¿se tiene conocimiento de pertenencia a un grupo u organización delincuencial?, con su descripción cuando la respuesta es sí). Usa directamente los valores ya capturados; si alguno de los dos es afirmativo, menciónalo en el relato con la descripción suministrada. Nunca vuelvas a preguntar por esto.
+
+**"Cuadrante" u otra división operativa de patrullaje**: este sistema no tiene ningún campo para el cuadrante, subestación, o división operativa asignada al servicio -- no preguntes por esto bajo ninguna circunstancia ni asumas que hace falta para la coherencia del relato. Si esta información no fue suministrada como parte de la ubicación o el servicio realizado, el relato simplemente no la menciona.
 
 # 3. CLASIFICACIÓN JURÍDICA Y TERMINOLOGÍA
 
@@ -89,6 +95,8 @@ Verificar:
 * utilización de medios para huir, cuando aplique.
 
 # 7. USO DE ESPOSAS
+
+Corrección 2026-08-26: bug real reportado tras prueba en vivo -- el sistema ya recibe siempre estos datos (uso, justificación, tiempo, motivo de retiro) cuando existen, sin necesidad de preguntarlos de nuevo. "Verificar" en este numeral significa incorporar esta información **directamente en el texto de la narrativa**, no solo comprobar internamente que el dato exista sin mencionarlo. Si el sistema recibió `usoEsposas = true`, el relato **debe** contener una mención explícita del uso de esposas con su justificación, tiempo de uso y motivo de retiro -- omitir esta mención cuando el dato fue suministrado es un error de redacción, no una omisión aceptable.
 
 ADOLESCENTES
 
