@@ -393,22 +393,23 @@ export class DocumentosService {
       .filter(Boolean)
       .join(' ');
 
-    // Contacto: si no se logró obtener NINGÚN dato del acudiente/representante,
-    // la hora queda en blanco y se deja la constancia en Observaciones.
-    // Adenda 2026-08-21: bug real reportado tras caso en vivo -- antes se
-    // usaba siempre una frase genérica fija, ignorando la justificación
-    // específica que el funcionario efectivamente escribió
-    // (justificacionNoComunicacion). Ahora se usa esa justificación
-    // cuando existe, y solo se cae a la frase genérica si no se escribió
-    // ninguna (constancia mínima, mejor que dejarlo vacío).
+    // Contacto: la constancia en Observaciones depende de si la
+    // COMUNICACIÓN fue exitosa (comunicacionExitosa), no de si se conoce
+    // la identidad del contacto -- son cosas distintas. Corrección
+    // 2026-08-26: bug real reportado tras prueba en vivo. Antes se usaba
+    // "contactoDesconocido" (¿se conoce al menos un dato del contacto?)
+    // como disparador -- eso deja pasar por alto el caso más común:
+    // el funcionario SÍ conoce el nombre/documento/teléfono del
+    // acudiente o representante, y aun así no logra comunicarse con
+    // él/ella (no contesta, número equivocado, etc.). En ese caso,
+    // comunicacionExitosa queda en false y SÍ existe una justificación
+    // escrita por el funcionario -- pero como los datos de identidad no
+    // estaban todos vacíos, "contactoDesconocido" daba false y la
+    // justificación nunca llegaba al documento.
     const contacto = capturado.contactoNotificacion;
-    const contactoDesconocido =
-      !contacto ||
-      (oNoAporta(contacto.nombre) === 'No aporta' &&
-        oNoAporta(contacto.identificacion) === 'No aporta' &&
-        oNoAporta(contacto.telefono) === 'No aporta');
+    const comunicacionFallida = !contacto || contacto.comunicacionExitosa === false;
 
-    const observaciones = contactoDesconocido
+    const observaciones = comunicacionFallida
       ? contacto?.justificacionNoComunicacion?.trim() ||
         `Se deja constancia de que no fue posible informar de la situación jurídica del ${esAprehendido ? 'aprehendido' : 'capturado'}(a) al no lograr obtener información del acudiente, representante o persona indicada por él/ella.`
       : OBSERVACIONES_VACIAS;
@@ -449,7 +450,7 @@ export class DocumentosService {
       C_NOMBRES: oNoAporta(contacto?.nombre),
       C_IDENTIFICACION: oNoAporta(contacto?.identificacion),
       C_TELEFONO: oNoAporta(contacto?.telefono),
-      C_HORA: contactoDesconocido ? '' : oNoAporta(contacto?.horaComunicacion),
+      C_HORA: comunicacionFallida ? '' : oNoAporta(contacto?.horaComunicacion),
       OBSERVACIONES: observaciones,
       FUNCIONARIO_INFO: `${funcionarioActuante.cargo} ${funcionarioActuante.nombreCompleto} - Placa ${funcionarioActuante.placa}`,
       BT_CIUDAD: lugarProcedimiento.municipio,
