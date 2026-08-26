@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditoriaService } from '../auditoria/auditoria.service';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 import { CreateProcedimientoDto } from './dto/create-procedimiento.dto';
 import { UpdateProcedimientoDto } from './dto/update-procedimiento.dto';
@@ -39,40 +40,96 @@ export class ProcedimientosService {
    * (Para producción con alta concurrencia, esto debería ir en una
    * secuencia/transacción dedicada; queda documentado como mejora futura.)
    */
+  /**
+   * Corrección 2026-08-26: bug real reportado tras prueba en vivo --
+   * "Unique constraint failed on the fields: (numeroInterno)".
+   *
+   * Antes se calculaba el siguiente número CONTANDO cuántos
+   * procedimientos existen ahora mismo (`count()` + 1). Eso se rompe
+   * en cuanto existe algún borrado -- y desde que existe la política
+   * de retención (los procedimientos se borran automáticamente a los
+   * 7 días de creados), siempre hay borrados ocurriendo en segundo
+   * plano. Ejemplo real: se llegó a crear hasta el número 000015, pero
+   * los primeros 10 ya se borraron por retención -- el conteo ve solo
+   * 5 restantes y genera "000006", que ya existe entre los 5 que
+   * quedan (del 000006 al 000015). Choque de restricción única.
+   *
+   * Corregido para buscar el número MÁS ALTO que realmente existe
+   * (no cuántos quedan) y sumarle 1 -- esto es correcto sin importar
+   * cuántos de los números anteriores se hayan borrado, porque los
+   * procedimientos más nuevos (los de número más alto) son
+   * precisamente los que la retención tarda más en alcanzar.
+   */
   private async generarNumeroInterno(): Promise<string> {
     const anio = new Date().getFullYear();
-    const total = await this.prisma.procedimiento.count({
-      where: {
-        numeroInterno: { startsWith: `EST-${anio}-` },
-      },
+    const ultimo = await this.prisma.procedimiento.findFirst({
+      where: { numeroInterno: { startsWith: `EST-${anio}-` } },
+      orderBy: { numeroInterno: 'desc' },
+      select: { numeroInterno: true },
     });
-    const consecutivo = String(total + 1).padStart(6, '0');
+    // El orden lexicográfico de string coincide con el numérico aquí
+    // porque todos los consecutivos tienen el mismo relleno de 6
+    // dígitos (padStart) -- "000010" sí ordena después de "000009".
+    const ultimoConsecutivo = ultimo?.numeroInterno
+      ? parseInt(ultimo.numeroInterno.split('-')[2] ?? '0', 10) || 0
+      : 0;
+    const consecutivo = String(ultimoConsecutivo + 1).padStart(6, '0');
     return `EST-${anio}-${consecutivo}`;
   }
 
   async create(dto: CreateProcedimientoDto, usuarioId: string, correoUsuario: string) {
-    const numeroInterno = await this.generarNumeroInterno();
+    // Corrección 2026-08-26: protección adicional, independiente de la
+    // corrección anterior -- si dos procedimientos se crean casi al
+    // mismo instante (dos funcionarios distintos, o cualquier otra
+    // coincidencia de tiempo), ambos podrían calcular el mismo
+    // "siguiente número" antes de que el primero termine de guardarse.
+    // En vez de fallar con un error 500 ante el usuario, se reintenta
+    // automáticamente con el siguiente número disponible, hasta 3
+    // veces -- suficiente para cualquier coincidencia real, sin
+    // arriesgar un bucle infinito ante un problema distinto.
+    const MAX_INTENTOS = 3;
+    let ultimoError: unknown;
 
-    const procedimiento = await this.prisma.procedimiento.create({
-      data: {
-        ...dto,
-        estado: 'Borrador', // VF-006: el estado inicial lo controla el sistema, no el cliente.
-        numeroInterno,
-        usuarioId,
-      },
-    });
+    for (let intento = 0; intento < MAX_INTENTOS; intento++) {
+      const numeroInterno = await this.generarNumeroInterno();
+      try {
+        const procedimiento = await this.prisma.procedimiento.create({
+          data: {
+            ...dto,
+            estado: 'Borrador', // VF-006: el estado inicial lo controla el sistema, no el cliente.
+            numeroInterno,
+            usuarioId,
+          },
+        });
 
-    await this.auditoria.registrar({
-      usuario: correoUsuario,
-      accion: 'Crear',
-      tablaAfectada: 'procedimientos',
-      registroAfectado: procedimiento.id,
-      descripcionEvento: `Creación del procedimiento ${numeroInterno}`,
-      procedimientoId: procedimiento.id,
-      numeroInterno: numeroInterno ?? undefined,
-    });
+        await this.auditoria.registrar({
+          usuario: correoUsuario,
+          accion: 'Crear',
+          tablaAfectada: 'procedimientos',
+          registroAfectado: procedimiento.id,
+          descripcionEvento: `Creación del procedimiento ${numeroInterno}`,
+          procedimientoId: procedimiento.id,
+          numeroInterno: numeroInterno ?? undefined,
+        });
 
-    return procedimiento;
+        return procedimiento;
+      } catch (error) {
+        const esChoqueDeNumero =
+          error instanceof PrismaClientKnownRequestError &&
+          error.code === 'P2002' &&
+          (error.meta?.target as string[] | undefined)?.includes('numeroInterno');
+
+        if (!esChoqueDeNumero) {
+          throw error;
+        }
+        ultimoError = error;
+        // Se reintenta el bucle -- generarNumeroInterno() vuelve a
+        // consultar el máximo real, que ya incluye el procedimiento
+        // que acaba de chocar.
+      }
+    }
+
+    throw ultimoError;
   }
 
   // WF-AUT-005: cada usuario ve únicamente sus propios procedimientos.
