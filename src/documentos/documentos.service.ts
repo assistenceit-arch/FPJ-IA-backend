@@ -26,6 +26,8 @@ import {
 } from './plantillas/rellenar-plantilla-word';
 import { AclaracionRequeridaException } from './excepciones/aclaracion-requerida.exception';
 import type { ContextoNarracionFpj5 } from '../narrativa/interfaces/contexto-narracion.interface';
+import { CorreoService } from '../correo/correo.service';
+import { UsuariosService } from '../usuarios/usuarios.service';
 
 // RT-005: los documentos generados se almacenan físicamente en el servidor.
 const CARPETA_ALMACENAMIENTO = path.join(process.cwd(), 'storage', 'documentos-generados');
@@ -45,6 +47,8 @@ export class DocumentosService {
     private readonly auditoria: AuditoriaService,
     private readonly acceso: ProcedimientoAccesoService,
     private readonly narrativa: NarrativaService,
+    private readonly correo: CorreoService,
+    private readonly usuarios: UsuariosService,
   ) {}
 
   /**
@@ -1421,6 +1425,48 @@ export class DocumentosService {
     }
 
     return documento;
+  }
+
+  /**
+   * Adenda 2026-08-26: envío del documento generado por correo, a
+   * solicitud del usuario -- alternativa a la descarga directa, útil
+   * sobre todo desde el celular (donde descargar un archivo puede ser
+   * menos práctico que en un computador). Reutiliza exactamente la
+   * misma verificación de propiedad y existencia física que
+   * obtenerArchivo (la descarga).
+   */
+  async enviarPorCorreo(
+    documentoId: string,
+    destino: string,
+    usuarioId: string,
+    rol?: string,
+  ) {
+    const documento = await this.obtenerArchivo(documentoId, usuarioId, rol);
+    const funcionario = await this.usuarios.buscarPorId(usuarioId);
+    const contenido = fs.readFileSync(documento.rutaArchivo);
+    const nombreArchivo = path.basename(documento.rutaArchivo);
+
+    await this.correo.enviarDocumento(
+      destino,
+      funcionario?.nombres ?? 'funcionario',
+      nombreArchivo,
+      contenido,
+    );
+
+    // Se deja constancia de a qué correo se envió cada documento --
+    // dato relevante para trazabilidad (a diferencia de una descarga
+    // local, esto saca una copia del documento hacia fuera del
+    // sistema), sin registrar el contenido del documento en sí.
+    await this.auditoria.registrar({
+      usuario: funcionario?.correo ?? usuarioId,
+      accion: 'Modificar',
+      tablaAfectada: 'documentos_generados',
+      registroAfectado: documento.id,
+      descripcionEvento: `Envío por correo del documento ${nombreArchivo} (${documento.tipoDocumento}) a ${destino}.`,
+      procedimientoId: documento.procedimientoId,
+    });
+
+    return { mensaje: `Documento enviado a ${destino}.` };
   }
 
   async listar(procedimientoId: string, usuarioId: string, rol?: string) {

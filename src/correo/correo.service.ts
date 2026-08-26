@@ -116,4 +116,42 @@ export class CorreoService {
       `,
     });
   }
+
+  // Adenda 2026-08-26: envío de un documento generado por correo, a
+  // solicitud del usuario -- alternativa a la descarga directa, útil
+  // sobre todo desde el celular. Sin SMTP configurado, no hay a dónde
+  // "dejar el enlace en el log" como con los otros correos (aquí el
+  // contenido es el archivo adjunto en sí) -- se lanza un error claro
+  // en su lugar, para no fingir un envío que nunca ocurrió.
+  async enviarDocumento(
+    destino: string,
+    nombreFuncionario: string,
+    nombreArchivo: string,
+    contenido: Buffer,
+  ): Promise<void> {
+    if (!this.transportador) {
+      throw new Error(
+        'El envío de documentos por correo no está disponible: el servidor no tiene SMTP configurado.',
+      );
+    }
+
+    await this.transportador.sendMail({
+      from: process.env.SMTP_FROM ?? process.env.SMTP_USER,
+      to: destino,
+      subject: `Documento generado — PJ | Gestión Digital`,
+      html: `
+        <p>Hola ${escaparHtml(nombreFuncionario)},</p>
+        <p>Adjunto encontrarás el documento que solicitaste enviar por correo: <strong>${escaparHtml(nombreArchivo)}</strong>.</p>
+        <p style="color:#666; font-size: 13px;">Recuerda que este documento puede contener información sensible. Verifica que el destinatario sea el correcto antes de compartirlo con terceros.</p>
+      `,
+      attachments: [
+        {
+          filename: nombreArchivo,
+          content: contenido,
+          contentType:
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        },
+      ],
+    });
+  }
 }

@@ -10,6 +10,7 @@ import {
 import type { Response } from 'express';
 import { DocumentosService } from './documentos.service';
 import { GenerarFpj5Dto } from './dto/generar-fpj5.dto';
+import { EnviarCorreoDto } from './dto/enviar-correo.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { JwtPayload } from '../auth/decorators/current-user.decorator';
@@ -132,5 +133,16 @@ export class DocumentosController {
   ) {
     const documento = await this.service.obtenerArchivo(documentoId, usuario.sub, usuario.rol);
     return res.download(documento.rutaArchivo);
+  }
+
+  // Adenda 2026-08-26: alternativa a la descarga directa, a solicitud
+  // del usuario -- útil sobre todo desde el celular.
+  @Post('documentos/:documentoId/enviar-correo')
+  async enviarCorreo(
+    @Param('documentoId') documentoId: string,
+    @Body() dto: EnviarCorreoDto,
+    @CurrentUser() usuario: JwtPayload,
+  ) {
+    return this.service.enviarPorCorreo(documentoId, dto.correo, usuario.sub, usuario.rol);
   }
 }
