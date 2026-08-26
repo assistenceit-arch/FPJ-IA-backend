@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditoriaService } from '../auditoria/auditoria.service';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import { ProcedimientoAccesoService } from './procedimiento-acceso.service';
 
 import { CreateProcedimientoDto } from './dto/create-procedimiento.dto';
 import { UpdateProcedimientoDto } from './dto/update-procedimiento.dto';
@@ -32,6 +33,7 @@ export class ProcedimientosService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditoria: AuditoriaService,
+    private readonly acceso: ProcedimientoAccesoService,
   ) {}
 
   /**
@@ -176,22 +178,18 @@ export class ProcedimientosService {
   }
 
   /**
-   * Adenda 2026-08-06: en cuanto el procedimiento generó al menos un
-   * documento oficial, se congela también la edición de sus propios
-   * campos (ej. puesta a disposición) -- ver el mismo criterio en
-   * ProcedimientoAccesoService.verificarNoBloqueado, usado por el resto
-   * de submódulos.
+   * Corrección 2026-08-26: bug real reportado tras prueba en vivo --
+   * un procedimiento con documentos ya generados quedaba bloqueado
+   * para siempre en este endpoint específico (PATCH /procedimientos/:id,
+   * donde se guarda la puesta a disposición), incluso DESPUÉS de que un
+   * administrador desbloqueara la edición desde el panel. Causa: esta
+   * clase tenía su propia copia privada de "verificarNoBloqueado" que
+   * nunca revisaba el campo `edicionDesbloqueada` -- a diferencia de
+   * ProcedimientoAccesoService.verificarNoBloqueado (ya usado
+   * correctamente por el resto del sistema, ej. DocumentosService), que
+   * sí lo revisa. Se elimina la copia duplicada y desactualizada; ahora
+   * se usa directamente la versión compartida y correcta.
    */
-  private async verificarNoBloqueado(procedimientoId: string) {
-    const cantidadGenerados = await this.prisma.documentoGenerado.count({
-      where: { procedimientoId },
-    });
-    if (cantidadGenerados > 0) {
-      throw new ForbiddenException(
-        'Este procedimiento ya generó documentos oficiales y quedó bloqueado para edición. Solo se pueden descargar los documentos existentes.',
-      );
-    }
-  }
 
   /**
    * Adenda 2026-08-08: en un procedimiento COMPLEJO, los Bloques 1 a 7
@@ -386,7 +384,7 @@ export class ProcedimientosService {
     rol?: string,
   ) {
     const existente = await this.findOne(id, usuarioId, rol);
-    await this.verificarNoBloqueado(id);
+    await this.acceso.verificarNoBloqueado(id);
     await this.verificarPagoComplejoAprobado(id);
 
     // Corrección 2026-08-26: bug real reportado tras prueba en vivo --
