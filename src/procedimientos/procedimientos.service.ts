@@ -389,6 +389,29 @@ export class ProcedimientosService {
     await this.verificarNoBloqueado(id);
     await this.verificarPagoComplejoAprobado(id);
 
+    // Corrección 2026-08-26: bug real reportado tras prueba en vivo --
+    // guardar la puesta a disposición al final del Bloque 4 fallaba
+    // (el autoguardado no lograba completarse). Causa: esta validación
+    // comparaba contra `existente.fechaCaptura`/`horaCaptura`, que es
+    // únicamente la ESTIMACIÓN inicial capturada al crear el
+    // procedimiento (antes de que existiera ningún interviniente) --
+    // no la hora real y precisa de la lectura de derechos de cada
+    // persona, que se registra después, individualmente (ver
+    // demora.util.ts). Si la estimación inicial quedó más tarde que la
+    // hora real de captura de la persona (por ejemplo, un funcionario
+    // que crea el procedimiento con una hora aproximada y luego
+    // registra la hora exacta más temprano), cualquier puesta a
+    // disposición posterior a la hora REAL, pero anterior a la
+    // ESTIMACIÓN, se rechazaba por error como "anterior a la captura".
+    // Se corrige usando obtenerCapturaMasAntigua(), el mismo criterio
+    // ya usado correctamente en actuaciones-procedimiento.service.ts y
+    // en todosLosBloquesCompletos() de este mismo archivo.
+    const capturados = await this.prisma.capturado.findMany({
+      where: { procedimientoId: id },
+      select: { fechaCaptura: true, horaCaptura: true },
+    });
+    const capturaMasAntigua = obtenerCapturaMasAntigua(existente, capturados);
+
     // Adenda 2026-08-04: la puesta a disposición también puede llegar
     // por aquí (PATCH /procedimientos/:id, desde el formulario de
     // disposición del Bloque 5), así que la validación de orden de
@@ -406,8 +429,8 @@ export class ProcedimientosService {
       dto.horaDisposicion !== undefined ? dto.horaDisposicion : existente.horaDisposicion;
 
     validarOrdenFechas({
-      fechaCaptura: existente.fechaCaptura,
-      horaCaptura: existente.horaCaptura,
+      fechaCaptura: capturaMasAntigua.fechaCaptura,
+      horaCaptura: capturaMasAntigua.horaCaptura,
       fechaDisposicion: fechaDisposicionNueva,
       horaDisposicion: horaDisposicionNueva,
     });
