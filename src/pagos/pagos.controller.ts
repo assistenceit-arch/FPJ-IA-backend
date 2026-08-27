@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -31,6 +32,25 @@ export class PagosController {
     FileInterceptor('comprobante', {
       storage: memoryStorage(),
       limits: { fileSize: 10 * 1024 * 1024 },
+      // Corrección 2026-08-27 (auditoría de seguridad): antes no había
+      // ninguna restricción de tipo de archivo -- un funcionario podía
+      // adjuntar cualquier cosa como "comprobante de pago" (un
+      // ejecutable, un script, cualquier documento), no solo una
+      // imagen o PDF real de un comprobante. Se restringe a los únicos
+      // formatos razonables para este propósito.
+      fileFilter: (_req, file, callback) => {
+        const tiposPermitidos = ['image/jpeg', 'image/png', 'application/pdf'];
+        if (!tiposPermitidos.includes(file.mimetype)) {
+          callback(
+            new BadRequestException(
+              'El comprobante debe ser una imagen (JPG, PNG) o un PDF.',
+            ),
+            false,
+          );
+          return;
+        }
+        callback(null, true);
+      },
     }),
   )
   registrar(

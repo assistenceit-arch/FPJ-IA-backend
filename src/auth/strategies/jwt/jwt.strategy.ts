@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { UsuariosService } from '../../../usuarios/usuarios.service';
+import { obtenerJwtSecret } from '../../../config/jwt-secret.util';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -9,7 +10,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET || 'fpj_ia_secret',
+      // Corrección 2026-08-27: mismo hallazgo que en auth.module.ts --
+      // se quita el respaldo fijo inseguro ('fpj_ia_secret').
+      secretOrKey: obtenerJwtSecret(),
     });
   }
 

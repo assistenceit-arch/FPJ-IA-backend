@@ -7,6 +7,7 @@ import {
   Delete,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { UsuariosService } from '../usuarios/usuarios.service';
 import { RegistrarPublicoDto } from '../usuarios/dto/registrar-publico.dto';
@@ -30,6 +31,12 @@ export class AuthController {
   // NO emite el token -- si las credenciales son correctas, envía el
   // código de segundo factor por correo y responde indicando que hace
   // falta verificarlo. El token real se emite en /auth/verificar-2fa.
+  // Corrección 2026-08-27 (auditoría de seguridad): límite propio y más
+  // estricto que el general de la aplicación (20/60s) -- login ya
+  // tiene su propio bloqueo por intentos fallidos sobre la CUENTA (5
+  // intentos), pero eso no protege contra un bot probando muchas
+  // cuentas distintas desde la misma dirección IP.
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('login')
   async login(@Body() body: LoginDto) {
     const usuario = await this.authService.validarUsuario(
@@ -48,6 +55,11 @@ export class AuthController {
 
   // Adenda 2026-08-24: segundo paso del login -- aquí sí se emite el
   // token JWT si el código es correcto.
+  // Corrección 2026-08-27 (auditoría de seguridad): el código de 6
+  // dígitos tiene 1.000.000 de combinaciones posibles -- sin límite de
+  // intentos, un bot podría intentar adivinarlo dentro de la ventana
+  // de 10 minutos en que es válido. Límite acorde a esa misma ventana.
+  @Throttle({ default: { limit: 10, ttl: 600000 } })
   @Post('verificar-2fa')
   async verificar2FA(@Body() body: Verificar2FADto) {
     return this.authService.verificarCodigo2FA(body.correo, body.codigo);
@@ -55,6 +67,9 @@ export class AuthController {
 
   // Adenda 2026-08-06: registro autónomo desde la pantalla de login,
   // sin necesidad de que un administrador cree la cuenta.
+  // Corrección 2026-08-27 (auditoría de seguridad): sin esto, un bot
+  // podría crear cuentas de forma masiva sin ningún límite.
+  @Throttle({ default: { limit: 3, ttl: 3600000 } })
   @Post('registro')
   async registro(@Body() dto: RegistrarPublicoDto) {
     await this.usuariosService.registrarPublico(dto);
@@ -71,6 +86,10 @@ export class AuthController {
   // Adenda 2026-08-24: recuperación de contraseña. Siempre responde con
   // el mismo mensaje genérico, exista o no la cuenta -- no se debe
   // revelar qué correos están registrados en el sistema.
+  // Corrección 2026-08-27 (auditoría de seguridad): sin esto, un bot
+  // podría hacer que el sistema envíe correos de recuperación sin
+  // límite hacia cualquier dirección, real o inventada.
+  @Throttle({ default: { limit: 3, ttl: 3600000 } })
   @Post('olvide-password')
   async olvidePassword(@Body() body: OlvidePasswordDto) {
     await this.usuariosService.solicitarRecuperacion(body.correo);

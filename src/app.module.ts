@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { SentryModule } from '@sentry/nestjs/setup';
 
 import configuration from './config/app.config';
@@ -42,6 +44,19 @@ import { LimpiezaAutomaticaModule } from './limpieza-automatica/limpieza-automat
     // necesario para el borrado automático de procedimientos por
     // política de retención (ver LimpiezaAutomaticaModule).
     ScheduleModule.forRoot(),
+    // Corrección 2026-08-27 (auditoría de seguridad): protección
+    // general contra bots -- límite por defecto para toda la
+    // aplicación (20 peticiones cada 60 segundos, por dirección IP).
+    // Los endpoints públicos más atractivos para un bot (login,
+    // registro, recuperación de contraseña, código 2FA) tienen además
+    // su propio límite, más estricto, definido directamente en cada
+    // uno con @Throttle().
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 20,
+      },
+    ]),
     AuthModule,
     UsuariosModule,
     PrismaModule,
@@ -62,6 +77,11 @@ import { LimpiezaAutomaticaModule } from './limpieza-automatica/limpieza-automat
     LimpiezaAutomaticaModule,
   ],
   controllers: [AppController],
-  providers: [],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}
