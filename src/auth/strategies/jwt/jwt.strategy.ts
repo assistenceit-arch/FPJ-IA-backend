@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { UsuariosService } from '../../../usuarios/usuarios.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor() {
+  constructor(private readonly usuariosService: UsuariosService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
@@ -12,7 +13,34 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: any) {
+  /**
+   * Corrección 2026-08-27: antes esta función confiaba ciegamente en lo
+   * que decía el token, sin volver a consultar la base de datos -- eso
+   * significaba que un token emitido seguía funcionando durante toda su
+   * vigencia (8 horas) sin importar qué pasara con la cuenta después:
+   * un administrador podía bloquear o eliminar a un usuario, o el
+   * propio usuario podía eliminar su cuenta (nueva función, a solicitud
+   * del usuario), y el acceso seguía activo hasta que el token
+   * venciera por sí solo. Ahora se revisa el estado real en cada
+   * petición autenticada -- costo aceptable (una consulta simple por
+   * petición) para una aplicación de este tamaño, a cambio de que
+   * cualquier bloqueo o eliminación surta efecto de inmediato.
+   */
+  async validate(payload: { sub: string; correo: string; rol: string }) {
+    const usuario = await this.usuariosService.buscarPorId(payload.sub);
+
+    if (!usuario || usuario.eliminado) {
+      throw new UnauthorizedException('Esta cuenta ya no existe.');
+    }
+    if (!usuario.activo) {
+      throw new UnauthorizedException('Tu cuenta ha sido bloqueada. Contacta a un administrador.');
+    }
+    if (usuario.bloqueadoPorIntentos) {
+      throw new UnauthorizedException(
+        'Tu cuenta fue bloqueada automáticamente por múltiples intentos fallidos de inicio de sesión.',
+      );
+    }
+
     return payload;
   }
 }

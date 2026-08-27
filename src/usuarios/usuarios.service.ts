@@ -9,6 +9,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateUsuarioDto } from './dto/create-usuario.dto';
 import { RegistrarPublicoDto } from './dto/registrar-publico.dto';
 import { CorreoService } from '../correo/correo.service';
+import { AuditoriaService } from '../auditoria/auditoria.service';
 import * as bcrypt from 'bcrypt';
 
 const HORAS_VALIDEZ_TOKEN = 24;
@@ -21,6 +22,7 @@ export class UsuariosService {
   constructor(
     private prisma: PrismaService,
     private readonly correo: CorreoService,
+    private readonly auditoria: AuditoriaService,
   ) {}
 
   /**
@@ -268,6 +270,43 @@ export class UsuariosService {
         eliminado: true,
       },
     });
+  }
+
+  /**
+   * Adenda 2026-08-27: eliminación de la propia cuenta (autoservicio),
+   * a solicitud del usuario -- distinto de eliminar() (esa la usa un
+   * administrador sobre un tercero, y no pide motivo). Reutiliza la
+   * misma protección de "no dejar el sistema sin ningún administrador
+   * activo", y además deja registrado el motivo que el propio
+   * funcionario escribió.
+   */
+  async eliminarPropiaCuenta(id: string, motivo: string) {
+    const usuario = await this.prisma.usuario.findUnique({ where: { id } });
+    if (!usuario) {
+      throw new NotFoundException('Usuario no encontrado.');
+    }
+    if (usuario.eliminado) {
+      return { mensaje: 'Tu cuenta ya estaba eliminada.' };
+    }
+
+    if (usuario.rol === 'ADMINISTRADOR' && usuario.activo) {
+      await this.exigirNoEsUltimoAdministrador(id);
+    }
+
+    await this.prisma.usuario.update({
+      where: { id },
+      data: { eliminado: true, eliminadoEn: new Date(), motivoEliminacion: motivo },
+    });
+
+    await this.auditoria.registrar({
+      usuario: usuario.correo,
+      accion: 'Eliminar',
+      tablaAfectada: 'usuarios',
+      registroAfectado: id,
+      descripcionEvento: `El usuario eliminó su propia cuenta. Motivo: ${motivo}`,
+    });
+
+    return { mensaje: 'Tu cuenta ha sido eliminada.' };
   }
 
   private async exigirNoEsUltimoAdministrador(idExcluido: string) {

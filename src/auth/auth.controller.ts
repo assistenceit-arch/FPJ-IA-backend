@@ -4,12 +4,16 @@ import {
   Post,
   Get,
   Query,
+  Delete,
   UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { UsuariosService } from '../usuarios/usuarios.service';
 import { RegistrarPublicoDto } from '../usuarios/dto/registrar-publico.dto';
+import { EliminarCuentaDto } from '../usuarios/dto/eliminar-cuenta.dto';
 import { JwtAuthGuard } from './guards/jwt-auth/jwt-auth.guard';
+import { CurrentUser } from './decorators/current-user.decorator';
+import type { JwtPayload } from './decorators/current-user.decorator';
 import { LoginDto } from './dto/login.dto';
 import { Verificar2FADto } from './dto/verificar-2fa.dto';
 import { OlvidePasswordDto } from './dto/olvide-password.dto';
@@ -86,5 +90,18 @@ export class AuthController {
     return {
       mensaje: 'Acceso autorizado',
     };
+  }
+
+  // Adenda 2026-08-27: eliminar la propia cuenta, a solicitud del
+  // usuario -- el id NUNCA se recibe del cliente, siempre sale del
+  // token (@CurrentUser), para que nadie pueda eliminar la cuenta de
+  // otra persona manipulando la petición.
+  @UseGuards(JwtAuthGuard)
+  @Delete('mi-cuenta')
+  async eliminarMiCuenta(
+    @Body() dto: EliminarCuentaDto,
+    @CurrentUser() usuario: JwtPayload,
+  ) {
+    return this.usuariosService.eliminarPropiaCuenta(usuario.sub, dto.motivo);
   }
 }

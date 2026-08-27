@@ -40,6 +40,13 @@ model Usuario {
   // existiendo en el listado; uno eliminado, no.
   eliminado   Boolean   @default(false)
   eliminadoEn DateTime?
+  // Adenda 2026-08-27: motivo que el propio funcionario escribe al
+  // eliminar su cuenta (autoservicio) -- a solicitud del usuario, para
+  // conocer qué piensan los usuarios o por qué se van. Queda en NULL
+  // cuando la eliminación la hace un administrador (eliminación de
+  // terceros no pide motivo), o para cuentas eliminadas antes de que
+  // existiera esta función.
+  motivoEliminacion String?
 
   // Adenda 2026-08-24: bloqueo automático por intentos fallidos de
   // inicio de sesión -- deliberadamente separado de `activo` (que
