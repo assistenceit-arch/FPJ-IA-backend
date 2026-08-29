@@ -19,5 +19,9 @@ import { UsuariosModule } from '../usuarios/usuarios.module';
   ],
   controllers: [DocumentosController],
   providers: [DocumentosService],
+  // Adenda 2026-08-29: exportado para que TrabajosGeneracionModule (la
+  // cola de generación en segundo plano) pueda reutilizar exactamente
+  // la misma lógica de generación que ya existía, sin duplicarla.
+  exports: [DocumentosService],
 })
 export class DocumentosModule {}

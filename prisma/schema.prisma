@@ -931,3 +931,65 @@ model AuditoriaEvento {
   @@index([numeroInterno])
   @@map("auditoria_eventos")
 }
+
+// ════════════════════════════════════════
+// Adenda 2026-08-29: cola de generación de documentos en segundo plano
+// ════════════════════════════════════════
+// A solicitud del usuario, tras confirmar con una prueba de carga real
+// que generar un documento (llamada a la IA + armado del .docx, ~1-2
+// minutos) podía dejar a otros funcionarios esperando hasta 84
+// segundos por algo tan simple como consultar su lista de
+// procedimientos, si su petición coincidía con el mismo proceso que
+// estaba generando un documento.
+//
+// En vez de generar el documento directamente dentro de la petición
+// HTTP, el endpoint ahora solo crea un registro aquí (estado
+// "Pendiente") y responde de inmediato. Un proceso aparte y dedicado
+// (ver src/worker.ts) -- que NO atiende peticiones HTTP de nadie más,
+// separado de los procesos que sí lo hacen -- va tomando estos
+// pendientes uno por uno y los procesa con calma, sin competir por el
+// mismo espacio que el resto de la aplicación.
+//
+// Se usa PostgreSQL como la "libreta de pendientes" (en vez de una
+// herramienta externa como Redis) para no agregar una pieza nueva de
+// infraestructura que instalar y mantener -- para el volumen actual de
+// la aplicación, esto es suficiente.
+model TrabajoGeneracion {
+  id String @id @default(uuid())
+
+  tipoDocumento String // FPJ5 | FPJ6 | ACTA | ACTA_COLECTIVA | FPJ7 | FPJ8
+  procedimientoId String
+  capturadoId   String? // FPJ6, ACTA individual
+  elementoId    String? // FPJ7, FPJ8
+
+  estado String @default("Pendiente") // Pendiente | Procesando | Completado | Fallido | RequiereAclaracion
+
+  // Exclusivo del FPJ-5: cuando la narrativa necesita una aclaración
+  // del funcionario antes de poder redactar el relato (ver
+  // AclaracionRequeridaException), el trabajo queda en este estado con
+  // la pregunta guardada aquí -- el frontend la muestra, el funcionario
+  // responde, y esa respuesta se agrega (en orden) a este arreglo,
+  // guardado como texto JSON simple, antes de reintentar.
+  preguntaAclaracion String?
+  aclaraciones       String? // JSON.stringify(string[])
+
+  // Se llena cuando estado = "Completado".
+  documentoGeneradoId String?
+
+  // Se llena cuando estado = "Fallido" -- mensaje legible para
+  // mostrarle al funcionario, no un stack trace técnico.
+  mensajeError String?
+
+  // Quién lo solicitó -- necesario para el registro de auditoría y
+  // para que solo esa persona (o un administrador) pueda consultar su
+  // propio trabajo.
+  usuarioId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // El trabajador busca "el pendiente más viejo" -- este índice hace
+  // esa búsqueda instantánea incluso si se acumulan muchos trabajos.
+  @@index([estado, createdAt])
+  @@map("trabajos_generacion")
+}

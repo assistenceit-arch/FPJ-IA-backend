@@ -24,6 +24,7 @@ import { ActuacionesProcedimientoModule } from './actuaciones-procedimiento/actu
 import { ConfiguracionPagosModule } from './configuracion-pagos/configuracion-pagos.module';
 import { PagosModule } from './pagos/pagos.module';
 import { DocumentosModule } from './documentos/documentos.module';
+import { TrabajosGeneracionModule } from './trabajos-generacion/trabajos-generacion.module';
 import { AdminModule } from './admin/admin.module';
 import { LimpiezaAutomaticaModule } from './limpieza-automatica/limpieza-automatica.module';
 // Fases 0-3 completas. Fase 4 en curso: motor de generación de documentos
@@ -73,6 +74,7 @@ import { LimpiezaAutomaticaModule } from './limpieza-automatica/limpieza-automat
     ConfiguracionPagosModule,
     PagosModule,
     DocumentosModule,
+    TrabajosGeneracionModule,
     AdminModule,
     LimpiezaAutomaticaModule,
   ],
