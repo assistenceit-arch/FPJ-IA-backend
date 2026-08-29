@@ -8,6 +8,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { ThrottlerPorCuentaGuard } from './guards/throttler-por-cuenta.guard';
 import { AuthService } from './auth.service';
 import { UsuariosService } from '../usuarios/usuarios.service';
 import { RegistrarPublicoDto } from '../usuarios/dto/registrar-publico.dto';
@@ -37,6 +38,7 @@ export class AuthController {
   // intentos), pero eso no protege contra un bot probando muchas
   // cuentas distintas desde la misma dirección IP.
   @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @UseGuards(ThrottlerPorCuentaGuard)
   @Post('login')
   async login(@Body() body: LoginDto) {
     const usuario = await this.authService.validarUsuario(
@@ -60,6 +62,7 @@ export class AuthController {
   // intentos, un bot podría intentar adivinarlo dentro de la ventana
   // de 10 minutos en que es válido. Límite acorde a esa misma ventana.
   @Throttle({ default: { limit: 10, ttl: 600000 } })
+  @UseGuards(ThrottlerPorCuentaGuard)
   @Post('verificar-2fa')
   async verificar2FA(@Body() body: Verificar2FADto) {
     return this.authService.verificarCodigo2FA(body.correo, body.codigo);
@@ -70,6 +73,7 @@ export class AuthController {
   // Corrección 2026-08-27 (auditoría de seguridad): sin esto, un bot
   // podría crear cuentas de forma masiva sin ningún límite.
   @Throttle({ default: { limit: 3, ttl: 3600000 } })
+  @UseGuards(ThrottlerPorCuentaGuard)
   @Post('registro')
   async registro(@Body() dto: RegistrarPublicoDto) {
     await this.usuariosService.registrarPublico(dto);
@@ -90,6 +94,7 @@ export class AuthController {
   // podría hacer que el sistema envíe correos de recuperación sin
   // límite hacia cualquier dirección, real o inventada.
   @Throttle({ default: { limit: 3, ttl: 3600000 } })
+  @UseGuards(ThrottlerPorCuentaGuard)
   @Post('olvide-password')
   async olvidePassword(@Body() body: OlvidePasswordDto) {
     await this.usuariosService.solicitarRecuperacion(body.correo);

@@ -47,6 +47,22 @@ export class LimpiezaAutomaticaService {
   // liviana: un solo filtro por fecha).
   @Cron(CronExpression.EVERY_HOUR)
   async purgarProcedimientosVencidos() {
+    // Corrección 2026-08-29 (escalabilidad): en modo clúster (PM2 con
+    // varias instancias, una por núcleo del servidor), cada instancia
+    // tendría su propio programador de tareas -- todas ejecutarían esta
+    // misma purga a la misma hora exacta. El riesgo real es bajo (si
+    // dos instancias intentan borrar el mismo procedimiento, la segunda
+    // simplemente falla con "registro no encontrado", sin dañar nada,
+    // gracias al try/catch de abajo), pero desperdicia trabajo y llena
+    // los registros de errores irrelevantes cada hora. PM2 asigna a
+    // cada instancia un número (NODE_APP_INSTANCE, empezando en '0') --
+    // solo la instancia 0 ejecuta esta tarea; en modo fork (una sola
+    // instancia, como corre hoy), esa variable no existe, así que la
+    // condición nunca bloquea nada.
+    if (process.env.NODE_APP_INSTANCE && process.env.NODE_APP_INSTANCE !== '0') {
+      return;
+    }
+
     const limite = new Date();
     limite.setDate(limite.getDate() - DIAS_RETENCION);
 

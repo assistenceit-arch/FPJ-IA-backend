@@ -9,6 +9,7 @@ import { UsuariosModule } from '../usuarios/usuarios.module';
 import { StrategiesModule } from './strategies/strategies.module';
 import { CorreoModule } from '../correo/correo.module';
 import { obtenerJwtSecret } from '../config/jwt-secret.util';
+import { ThrottlerPorCuentaGuard } from './guards/throttler-por-cuenta.guard';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { obtenerJwtSecret } from '../config/jwt-secret.util';
   providers: [
     AuthService,
     JwtStrategy,
+    ThrottlerPorCuentaGuard,
   ],
 })
 export class AuthModule {}
