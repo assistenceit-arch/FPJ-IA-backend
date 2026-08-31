@@ -15,15 +15,18 @@ export const environmentValidationSchema = Joi.object({
   // los hechos del FPJ-5). Se crea en console.anthropic.com.
   ANTHROPIC_API_KEY: Joi.string().required(),
 
-  // Adenda 2026-08-06: envío de correo de verificación para el registro
-  // autónomo (src/correo). Opcionales -- si no están configuradas, el
-  // enlace de verificación queda en el log del servidor en vez de
-  // enviarse por correo real (útil en desarrollo).
-  SMTP_HOST: Joi.string().optional(),
-  SMTP_PORT: Joi.number().optional(),
-  SMTP_USER: Joi.string().optional(),
-  SMTP_PASS: Joi.string().optional(),
-  SMTP_FROM: Joi.string().optional(),
+  // Corrección 2026-08-31: se reemplaza SMTP directo por Resend (envío
+  // de correo vía API HTTP) -- DigitalOcean, como la mayoría de
+  // proveedores de nube, bloquea por defecto los puertos SMTP (25, 465,
+  // 587) en todos sus servidores para prevenir spam. Esto hacía que
+  // cualquier envío directo por SMTP fallara con "Connection timeout",
+  // sin importar qué tan bien estuvieran las credenciales -- no era un
+  // problema de configuración, era una política de la plataforma.
+  // Opcionales -- si no están configuradas, el enlace/código queda en
+  // el log del servidor en vez de enviarse por correo real (útil en
+  // desarrollo).
+  RESEND_API_KEY: Joi.string().optional(),
+  RESEND_FROM: Joi.string().optional(),
   FRONTEND_URL: Joi.string().optional(),
 
   // Adenda 2026-08-24: monitoreo y alertas de errores (Sentry).

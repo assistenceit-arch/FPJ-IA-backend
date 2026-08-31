@@ -9,7 +9,7 @@ import { nodeProfilingIntegration } from '@sentry/profiling-node';
 //
 // Se activa solo si SENTRY_DSN está configurado -- en desarrollo local,
 // sin esa variable, Sentry simplemente no hace nada (mismo criterio ya
-// usado en CorreoService con SMTP_HOST: no fallar por falta de
+// usado en CorreoService con RESEND_API_KEY: no fallar por falta de
 // credenciales de un servicio externo opcional).
 if (process.env.SENTRY_DSN) {
   Sentry.init({

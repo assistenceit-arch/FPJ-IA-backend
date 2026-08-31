@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import * as nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
 // Adenda 2026-08-24: el nombre del usuario se insertaba directamente en
 // el HTML del correo (`${nombre}`) sin escapar -- si alguien registrara
@@ -19,47 +19,54 @@ function escaparHtml(texto: string): string {
 }
 
 /**
- * Envío de correos transaccionales (por ahora, solo verificación de
- * cuenta del registro autónomo). Usa SMTP genérico vía nodemailer, así
- * funciona con cualquier proveedor (Gmail con contraseña de aplicación,
- * SendGrid, Amazon SES, un servidor propio, etc.) — basta con configurar
- * las variables SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASS/SMTP_FROM.
+ * Envío de correos transaccionales, vía la API de Resend (HTTPS, puerto
+ * 443).
  *
- * Si no hay SMTP configurado (típicamente en desarrollo), el enlace de
- * verificación se deja en el log del servidor en vez de fallar, para
+ * Corrección 2026-08-31: antes se usaba SMTP directo (nodemailer,
+ * cualquier proveedor genérico) -- pero DigitalOcean, como la mayoría
+ * de proveedores de nube, bloquea por defecto los puertos SMTP (25,
+ * 465, 587) en todos sus servidores para prevenir spam y abuso de su
+ * plataforma. Cualquier intento de conexión SMTP directa desde el
+ * servidor fallaba con "Connection timeout" (ETIMEDOUT), sin importar
+ * qué tan bien estuvieran las credenciales -- no era un problema de
+ * configuración, era una política de la plataforma, y no es exclusivo
+ * de DigitalOcean (AWS, GCP y Azure tienen restricciones similares).
+ * Resend evita esto por completo: la aplicación llama a su API por
+ * HTTPS (nunca abre una conexión SMTP saliente), y es el propio Resend
+ * quien se encarga de la entrega real del correo.
+ *
+ * Si no hay Resend configurado (típicamente en desarrollo), el
+ * enlace/código se deja en el log del servidor en vez de fallar, para
  * poder seguir probando el flujo sin credenciales reales.
  */
 @Injectable()
 export class CorreoService {
   private readonly logger = new Logger(CorreoService.name);
-  private transportador: nodemailer.Transporter | null = null;
+  private cliente: Resend | null = null;
 
   constructor() {
-    if (process.env.SMTP_HOST) {
-      this.transportador = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: Number(process.env.SMTP_PORT ?? 587),
-        secure: process.env.SMTP_PORT === '465',
-        auth: process.env.SMTP_USER
-          ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
-          : undefined,
-      });
+    if (process.env.RESEND_API_KEY) {
+      this.cliente = new Resend(process.env.RESEND_API_KEY);
     }
+  }
+
+  private remitente(): string {
+    return process.env.RESEND_FROM ?? 'PJ | Gestión Digital <onboarding@resend.dev>';
   }
 
   async enviarVerificacion(destino: string, nombre: string, token: string): Promise<void> {
     const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:3001';
     const enlace = `${frontendUrl}/verificar-correo?token=${token}`;
 
-    if (!this.transportador) {
+    if (!this.cliente) {
       this.logger.warn(
-        `SMTP no configurado — enlace de verificación para ${destino}: ${enlace}`,
+        `Resend no configurado — enlace de verificación para ${destino}: ${enlace}`,
       );
       return;
     }
 
-    await this.transportador.sendMail({
-      from: process.env.SMTP_FROM ?? process.env.SMTP_USER,
+    await this.cliente.emails.send({
+      from: this.remitente(),
       to: destino,
       subject: 'Verifica tu correo — PJ | Gestión Digital',
       html: `
@@ -75,13 +82,13 @@ export class CorreoService {
   // dígitos, obligatorio para todos los funcionarios en cada inicio de
   // sesión.
   async enviarCodigo2FA(destino: string, nombre: string, codigo: string): Promise<void> {
-    if (!this.transportador) {
-      this.logger.warn(`SMTP no configurado — código de verificación para ${destino}: ${codigo}`);
+    if (!this.cliente) {
+      this.logger.warn(`Resend no configurado — código de verificación para ${destino}: ${codigo}`);
       return;
     }
 
-    await this.transportador.sendMail({
-      from: process.env.SMTP_FROM ?? process.env.SMTP_USER,
+    await this.cliente.emails.send({
+      from: this.remitente(),
       to: destino,
       subject: 'Tu código de verificación — PJ | Gestión Digital',
       html: `
@@ -99,13 +106,13 @@ export class CorreoService {
     const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:3001';
     const enlace = `${frontendUrl}/restablecer-password?token=${token}`;
 
-    if (!this.transportador) {
-      this.logger.warn(`SMTP no configurado — enlace de recuperación para ${destino}: ${enlace}`);
+    if (!this.cliente) {
+      this.logger.warn(`Resend no configurado — enlace de recuperación para ${destino}: ${enlace}`);
       return;
     }
 
-    await this.transportador.sendMail({
-      from: process.env.SMTP_FROM ?? process.env.SMTP_USER,
+    await this.cliente.emails.send({
+      from: this.remitente(),
       to: destino,
       subject: 'Recupera tu contraseña — PJ | Gestión Digital',
       html: `
@@ -119,7 +126,7 @@ export class CorreoService {
 
   // Adenda 2026-08-26: envío de un documento generado por correo, a
   // solicitud del usuario -- alternativa a la descarga directa, útil
-  // sobre todo desde el celular. Sin SMTP configurado, no hay a dónde
+  // sobre todo desde el celular. Sin Resend configurado, no hay a dónde
   // "dejar el enlace en el log" como con los otros correos (aquí el
   // contenido es el archivo adjunto en sí) -- se lanza un error claro
   // en su lugar, para no fingir un envío que nunca ocurrió.
@@ -129,14 +136,14 @@ export class CorreoService {
     nombreArchivo: string,
     contenido: Buffer,
   ): Promise<void> {
-    if (!this.transportador) {
+    if (!this.cliente) {
       throw new Error(
-        'El envío de documentos por correo no está disponible: el servidor no tiene SMTP configurado.',
+        'El envío de documentos por correo no está disponible: el servidor no tiene Resend configurado.',
       );
     }
 
-    await this.transportador.sendMail({
-      from: process.env.SMTP_FROM ?? process.env.SMTP_USER,
+    await this.cliente.emails.send({
+      from: this.remitente(),
       to: destino,
       subject: `Documento generado — PJ | Gestión Digital`,
       html: `
@@ -148,8 +155,6 @@ export class CorreoService {
         {
           filename: nombreArchivo,
           content: contenido,
-          contentType:
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         },
       ],
     });
