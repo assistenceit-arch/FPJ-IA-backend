@@ -1,4 +1,5 @@
 import {
+  IsBoolean,
   IsDateString,
   IsNotEmpty,
   IsOptional,
@@ -47,4 +48,13 @@ export class CreateProcedimientoDto {
   @IsOptional()
   @IsString()
   observacionesGenerales?: string;
+
+  // Adenda 2026-09-01: el funcionario confirma explícitamente que no
+  // hay elementos incautados en este procedimiento -- ver comentario
+  // en schema.prisma. Solo se acepta aquí para permitir que
+  // UpdateProcedimientoDto lo modifique (nunca se envía al crear el
+  // procedimiento, solo después, desde el Bloque 5).
+  @IsOptional()
+  @IsBoolean()
+  sinElementosIncautados?: boolean;
 }

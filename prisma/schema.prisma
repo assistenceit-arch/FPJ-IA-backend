@@ -121,6 +121,19 @@ model Procedimiento {
   // administrador lo activa y lo desactiva cuando corresponda.
   edicionDesbloqueada Boolean @default(false)
 
+  // Adenda 2026-09-01: bug real reportado tras prueba en vivo -- el
+  // Bloque 5 (Elementos incautados) se marcaba en verde automáticamente
+  // al crear el procedimiento, incluso sin haber registrado ningún
+  // elemento -- porque "cero elementos conocidos todavía" (nadie ha
+  // contestado nada) y "cero elementos porque el funcionario confirmó
+  // que no hay ninguno" se trataban como lo mismo. Este campo distingue
+  // ambos casos explícitamente (mismo patrón "N/A explícito vs. campo
+  // vacío sin contestar" ya usado en otras partes de la aplicación):
+  // null = sin contestar todavía (el bloque queda pendiente); true =
+  // el funcionario confirmó explícitamente que no hay elementos
+  // incautados en este procedimiento (el bloque sí queda completo).
+  sinElementosIncautados Boolean?
+
   usuarioId String // WF-AUT-005: cada usuario ve solo sus procedimientos
   usuario   Usuario @relation(fields: [usuarioId], references: [id])
 

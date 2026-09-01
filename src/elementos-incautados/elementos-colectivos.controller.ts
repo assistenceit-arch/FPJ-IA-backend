@@ -4,11 +4,13 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
 import { ElementosIncautadosService } from './elementos-incautados.service';
 import { CrearElementoDto } from './dto/crear-elemento.dto';
+import { ActualizarElementoDto } from './dto/actualizar-elemento.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { JwtPayload } from '../auth/decorators/current-user.decorator';
@@ -49,6 +51,24 @@ export class ElementosColectivosController {
     @CurrentUser() usuario: JwtPayload,
   ) {
     return this.service.obtener(procedimientoId, null, elementoId, usuario.sub, usuario.rol);
+  }
+
+  @Patch(':elementoId')
+  actualizar(
+    @Param('procedimientoId') procedimientoId: string,
+    @Param('elementoId') elementoId: string,
+    @Body() dto: ActualizarElementoDto,
+    @CurrentUser() usuario: JwtPayload,
+  ) {
+    return this.service.actualizar(
+      procedimientoId,
+      null,
+      elementoId,
+      dto,
+      usuario.sub,
+      usuario.correo,
+      usuario.rol,
+    );
   }
 
   @Delete(':elementoId')

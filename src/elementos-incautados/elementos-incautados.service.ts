@@ -24,7 +24,7 @@ export class ElementosIncautadosService {
    * construye la descripción base única del elemento, que luego se
    * reutilizará sin cambios en el Acta de Incautación, el FPJ 7 y el FPJ 8.
    */
-  private construirDescripcionBase(dto: CrearElementoDto | ActualizarElementoDto): string {
+  private construirDescripcionBase(dto: CrearElementoDto): string {
     switch (dto.tipoElemento) {
       case 'SUSTANCIA': {
         // Adenda 2026-08-11: dos correcciones a solicitud del usuario:
@@ -218,6 +218,192 @@ export class ElementosIncautadosService {
     }
   }
 
+  // Adenda 2026-09-01: descarta las llaves indefinidas de un objeto --
+  // así una actualización parcial (el funcionario solo cambió un
+  // campo) no sobrescribe con `undefined` los demás campos del mismo
+  // detalle que no vinieron en la petición.
+  private omitirIndefinidos<T extends object>(obj: T): Partial<T> {
+    const resultado: Partial<T> = {};
+    for (const [clave, valor] of Object.entries(obj)) {
+      if (valor !== undefined) {
+        (resultado as Record<string, unknown>)[clave] = valor;
+      }
+    }
+    return resultado;
+  }
+
+  // Misma estructura que construirDatosDetalle(), pero usando `update`
+  // en vez de `create` -- el tipo de elemento NUNCA cambia en una
+  // edición (ver comentario en ActualizarElementoDto), así que aquí
+  // siempre se sabe de antemano cuál es el ÚNICO detalle relacionado
+  // que existe y hay que actualizar.
+  private construirDatosDetalleActualizacion(tipoElemento: string, dto: ActualizarElementoDto) {
+    switch (tipoElemento) {
+      case 'SUSTANCIA':
+        return {
+          detalleSustancia: {
+            update: this.omitirIndefinidos({
+              cantidadEmpaques: dto.cantidadEmpaques,
+              tipoEmpaque: dto.tipoEmpaque,
+              tipoSustancia: dto.tipoSustancia,
+              color: dto.color,
+              caracteristicas: dto.caracteristicas,
+            }),
+          },
+        };
+      case 'DINERO':
+        return {
+          detalleDinero: {
+            update: this.omitirIndefinidos({
+              valorTotal: dto.valorTotal,
+              denominaciones: dto.denominaciones,
+            }),
+          },
+        };
+      case 'CELULAR':
+        return {
+          detalleCelular: {
+            update: this.omitirIndefinidos({
+              marca: dto.marca,
+              color: dto.color,
+              imei: dto.imei,
+            }),
+          },
+        };
+      case 'ARMA':
+        return {
+          detalleArma: {
+            update: this.omitirIndefinidos({
+              tipoArma: dto.tipoArma,
+              marca: dto.marca,
+              calibre: dto.calibre,
+              color: dto.color,
+              cachaMaterial: dto.cachaMaterial,
+              cachaColor: dto.cachaColor,
+              serial: dto.serial,
+              estadoSerial: dto.estadoSerial,
+              estadoArma: dto.estadoArma,
+              cantidadMuniciones: dto.cantidadMuniciones,
+              calibreMunicion: dto.calibreMunicion,
+              cantidadCargadores: dto.cantidadCargadores,
+            }),
+          },
+        };
+      case 'OTRO':
+        return {
+          detalleOtro: {
+            update: this.omitirIndefinidos({
+              descripcionManual: dto.descripcionManual,
+            }),
+          },
+        };
+      default:
+        return {};
+    }
+  }
+
+  /**
+   * Adenda 2026-09-01, a solicitud del usuario: hasta ahora, un
+   * elemento registrado solo se podía eliminar, nunca editar -- a
+   * diferencia de capturados/aprehendidos, víctimas y testigos, que sí
+   * se pueden editar. El tipo de elemento (sustancia/dinero/etc.) no es
+   * editable (ver ActualizarElementoDto) -- todos los demás campos sí,
+   * incluidos los del detalle específico de ese tipo.
+   */
+  async actualizar(
+    procedimientoId: string,
+    capturadoId: string | null,
+    elementoId: string,
+    dto: ActualizarElementoDto,
+    usuarioId: string,
+    correoUsuario: string,
+    rol?: string,
+  ) {
+    await this.acceso.verificarPropiedad(procedimientoId, usuarioId, rol);
+    await this.acceso.verificarNoBloqueado(procedimientoId);
+    await this.acceso.verificarPagoComplejoAprobado(procedimientoId);
+    if (capturadoId) await this.verificarCapturado(procedimientoId, capturadoId);
+
+    const existente = await this.obtenerElementoOFallar(procedimientoId, capturadoId, elementoId);
+
+    // La descripción base (usada en Acta/FPJ7/FPJ8, ver RI de
+    // consistencia documental) se reconstruye siempre, combinando los
+    // valores YA existentes (aplanando el detalle anidado que
+    // corresponda a este tipo de elemento) con lo que el funcionario
+    // haya cambiado en esta edición -- así, si solo corrigió un campo,
+    // los demás se conservan tal cual estaban, sin perder información.
+    const detalleExistente =
+      existente.detalleSustancia ??
+      existente.detalleDinero ??
+      existente.detalleCelular ??
+      existente.detalleArma ??
+      existente.detalleOtro ??
+      {};
+    const dtoCompletoParaDescripcion: CrearElementoDto = {
+      tipoElemento: existente.tipoElemento as CrearElementoDto['tipoElemento'],
+      direccionIncautacion: existente.direccionIncautacion,
+      ubicacionHallazgo: existente.ubicacionHallazgo ?? undefined,
+      ...detalleExistente,
+      ...this.omitirIndefinidos(dto),
+    } as CrearElementoDto;
+    const descripcionBase = this.construirDescripcionBase(dtoCompletoParaDescripcion);
+    const detalle = this.construirDatosDetalleActualizacion(existente.tipoElemento, dto);
+
+    const datosBase = this.omitirIndefinidos({
+      ubicacionHallazgo: dto.ubicacionHallazgo?.trim(),
+      direccionIncautacion: dto.direccionIncautacion,
+      observaciones:
+        dto.observaciones !== undefined ? dto.observaciones?.trim() || null : undefined,
+      victimaId: dto.victimaId,
+      recuperado: dto.recuperado,
+      recuperadoPor:
+        dto.recuperado !== undefined
+          ? dto.recuperado
+            ? dto.recuperadoPor?.trim() || null
+            : null
+          : dto.recuperadoPor?.trim(),
+      fuenteVerificacionHurto: dto.fuenteVerificacionHurto,
+      nombreAplicativo: dto.nombreAplicativo?.trim(),
+      numeroReporteAplicativo: dto.numeroReporteAplicativo?.trim(),
+      numeroDenuncia: dto.numeroDenuncia?.trim(),
+      entidadDenuncia: dto.entidadDenuncia?.trim(),
+      fechaDenuncia: dto.fechaDenuncia ? new Date(dto.fechaDenuncia) : undefined,
+      denuncianteNombre: dto.denuncianteNombre?.trim(),
+      denuncianteDocumento: dto.denuncianteDocumento?.trim(),
+      denuncianteTelefono: dto.denuncianteTelefono?.trim(),
+      contextoExhibicion: dto.contextoExhibicion?.trim(),
+      criteriosSospecha: dto.criteriosSospecha?.trim(),
+    });
+
+    const elemento = await this.prisma.elementoIncautado.update({
+      where: { id: elementoId },
+      data: {
+        ...datosBase,
+        descripcionBase,
+        ...detalle,
+      },
+      include: {
+        detalleSustancia: true,
+        detalleDinero: true,
+        detalleCelular: true,
+        detalleArma: true,
+        detalleOtro: true,
+        victima: true,
+      },
+    });
+
+    await this.auditoria.registrar({
+      usuario: correoUsuario,
+      accion: 'Modificar',
+      tablaAfectada: 'elementos_incautados',
+      registroAfectado: elemento.id,
+      descripcionEvento: `Edición de elemento (${existente.tipoElemento}) del procedimiento ${procedimientoId}`,
+      procedimientoId,
+    });
+
+    return elemento;
+  }
+
   async crear(
     procedimientoId: string,
     capturadoId: string | null,
@@ -305,6 +491,18 @@ export class ElementosIncautadosService {
         ? `Registro de elemento (${dto.tipoElemento}) para el interviniente ${capturadoId}`
         : `Registro de elemento colectivo (${dto.tipoElemento}, sin individualizar) para el procedimiento ${procedimientoId}`,
       procedimientoId,
+    });
+
+    // Corrección 2026-09-01: si el procedimiento había quedado marcado
+    // como "sin elementos incautados" (ver Bloque 5) y el funcionario
+    // ahora registra uno real, esa marca queda desactualizada -- se
+    // limpia para no dejar un estado contradictorio en la base de
+    // datos (aunque, de todas formas, el frontend ya prioriza "hay
+    // elementos registrados" sobre esta marca al calcular el estado
+    // del bloque).
+    await this.prisma.procedimiento.update({
+      where: { id: procedimientoId },
+      data: { sinElementosIncautados: false },
     });
 
     return elemento;
