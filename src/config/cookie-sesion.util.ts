@@ -21,11 +21,25 @@ const HORAS_EXPIRACION = 8;
 export function opcionesCookieSesion(): CookieOptions {
   return {
     httpOnly: true,
-    // secure=true exige HTTPS -- correcto en producción (Caddy sirve
-    // todo por HTTPS), pero rompería el login en desarrollo local
-    // (http://localhost sin TLS). NODE_ENV=production solo se define
-    // así en los servidores reales (ver .env de cada servidor).
-    secure: process.env.NODE_ENV === 'production',
+    // Corrección 2026-09-03 (bug real encontrado en el servidor de
+    // pruebas): antes, esto dependía únicamente de NODE_ENV==='production'
+    // -- pero el servidor de pruebas también corre con NODE_ENV=production
+    // (mismo criterio operativo que producción real), SIN tener HTTPS de
+    // verdad (se accede directo por IP, sin dominio ni certificado). El
+    // navegador rechaza silenciosamente guardar una cookie marcada
+    // "Secure" si la conexión no es HTTPS -- el login parecía funcionar
+    // (el servidor respondía con éxito), pero la cookie nunca quedaba
+    // guardada de verdad, y la aplicación devolvía al usuario al login.
+    //
+    // Ahora es una variable propia (COOKIE_SECURE), independiente de
+    // NODE_ENV -- por defecto sigue el mismo comportamiento de antes
+    // (true en producción), pero cada servidor puede indicar
+    // explícitamente si de verdad tiene HTTPS o no. El servidor de
+    // pruebas debe tener COOKIE_SECURE=false en su .env; producción
+    // real (con Caddy y HTTPS real) debe dejarlo sin definir, o en true.
+    secure: process.env.COOKIE_SECURE
+      ? process.env.COOKIE_SECURE === 'true'
+      : process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
     maxAge: HORAS_EXPIRACION * 60 * 60 * 1000,

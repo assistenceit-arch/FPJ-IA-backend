@@ -33,4 +33,14 @@ export const environmentValidationSchema = Joi.object({
   // Opcional -- si no está configurada, Sentry simplemente no se
   // activa (mismo criterio que SMTP_HOST).
   SENTRY_DSN: Joi.string().optional(),
+
+  // Corrección 2026-09-03 (auditoría de seguridad de la PWA): controla
+  // si la cookie de sesión exige HTTPS real (flag "Secure"). Por
+  // defecto sigue el mismo valor que NODE_ENV=production -- solo hace
+  // falta definirla explícitamente en un servidor que corre en modo
+  // "production" pero SIN HTTPS real (ej. el servidor de pruebas, que
+  // se accede directo por IP sin dominio ni certificado) -- ahí debe
+  // ser 'false', o el navegador rechaza silenciosamente guardar la
+  // cookie y el login nunca queda realmente iniciado.
+  COOKIE_SECURE: Joi.string().valid('true', 'false').optional(),
 });
