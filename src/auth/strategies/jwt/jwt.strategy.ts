@@ -1,14 +1,31 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import type { Request } from 'express';
 import { UsuariosService } from '../../../usuarios/usuarios.service';
 import { obtenerJwtSecret } from '../../../config/jwt-secret.util';
+import { NOMBRE_COOKIE_SESION } from '../../../config/cookie-sesion.util';
+
+// Corrección 2026-09-03 (auditoría de seguridad de la PWA): el token
+// ahora vive en una cookie HttpOnly (ver cookie-sesion.util.ts), no en
+// el header Authorization -- este extractor personalizado lo lee
+// directamente de req.cookies (requiere cookie-parser, registrado en
+// main.ts). Se mantiene también la extracción por header Bearer como
+// respaldo, por si en el futuro algún cliente que no sea el navegador
+// (una integración externa, por ejemplo) necesita autenticarse sin
+// cookies.
+function extraerDeCookie(req: Request): string | null {
+  return req?.cookies?.[NOMBRE_COOKIE_SESION] ?? null;
+}
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(private readonly usuariosService: UsuariosService) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        extraerDeCookie,
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ]),
       ignoreExpiration: false,
       // Corrección 2026-08-27: mismo hallazgo que en auth.module.ts --
       // se quita el respaldo fijo inseguro ('fpj_ia_secret').

@@ -7,9 +7,25 @@ import { ValidationPipe } from '@nestjs/common';
 import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SentryGlobalFilter } from '@sentry/nestjs/setup';
+import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Corrección 2026-09-03 (auditoría de seguridad de la PWA): cabeceras
+  // HTTP de seguridad estándar (X-Content-Type-Options, X-Frame-Options,
+  // etc.) -- esta es una API JSON pura (nunca sirve HTML), así que se
+  // desactiva contentSecurityPolicy aquí (esa protección real vive en
+  // el frontend, en next.config.mjs, que es quien sirve las páginas que
+  // el navegador renderiza).
+  app.use(helmet({ contentSecurityPolicy: false }));
+
+  // Corrección 2026-09-03 (auditoría de seguridad de la PWA): necesario
+  // para que la estrategia JWT pueda leer el token desde la cookie
+  // HttpOnly (req.cookies), en vez de depender únicamente del header
+  // Authorization -- sin este middleware, req.cookies llega undefined.
+  app.use(cookieParser());
 
   // Corrección 2026-08-24: SentryGlobalFilter extiende BaseExceptionFilter
   // de NestJS, que internamente necesita una referencia al httpAdapter

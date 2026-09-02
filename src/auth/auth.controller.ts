@@ -5,8 +5,10 @@ import {
   Get,
   Query,
   Delete,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { Throttle } from '@nestjs/throttler';
 import { ThrottlerPorCuentaGuard } from './guards/throttler-por-cuenta.guard';
 import { AuthService } from './auth.service';
@@ -20,6 +22,7 @@ import { LoginDto } from './dto/login.dto';
 import { Verificar2FADto } from './dto/verificar-2fa.dto';
 import { OlvidePasswordDto } from './dto/olvide-password.dto';
 import { RestablecerPasswordDto } from './dto/restablecer-password.dto';
+import { NOMBRE_COOKIE_SESION, opcionesCookieSesion } from '../config/cookie-sesion.util';
 
 @Controller('auth')
 export class AuthController {
@@ -64,8 +67,17 @@ export class AuthController {
   @Throttle({ default: { limit: 10, ttl: 600000 } })
   @UseGuards(ThrottlerPorCuentaGuard)
   @Post('verificar-2fa')
-  async verificar2FA(@Body() body: Verificar2FADto) {
-    return this.authService.verificarCodigo2FA(body.correo, body.codigo);
+  async verificar2FA(
+    @Body() body: Verificar2FADto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const resultado = await this.authService.verificarCodigo2FA(body.correo, body.codigo);
+    // Corrección 2026-09-03 (auditoría de seguridad de la PWA): el
+    // token ya no se devuelve en el cuerpo de la respuesta -- se envía
+    // como cookie HttpOnly, invisible para JavaScript del navegador
+    // (ver cookie-sesion.util.ts para el motivo completo).
+    response.cookie(NOMBRE_COOKIE_SESION, resultado.access_token, opcionesCookieSesion());
+    return { usuario: resultado.usuario };
   }
 
   // Adenda 2026-08-06: registro autónomo desde la pantalla de login,
@@ -108,12 +120,33 @@ export class AuthController {
     return this.usuariosService.restablecerPassword(body.token, body.nuevaPassword);
   }
 
+  // Corrección 2026-09-03 (auditoría de seguridad de la PWA): antes
+  // solo confirmaba "Acceso autorizado" -- ahora devuelve los datos
+  // reales del usuario (correo, rol), porque el frontend ya NO puede
+  // leerlos decodificando el token en JavaScript (la cookie es
+  // HttpOnly, invisible para el navegador) -- este endpoint es la
+  // nueva forma en que el frontend sabe quién inició sesión y con qué
+  // rol, para mostrar/ocultar partes de la interfaz.
   @UseGuards(JwtAuthGuard)
   @Get('perfil')
-  perfil() {
+  perfil(@CurrentUser() usuario: JwtPayload) {
     return {
-      mensaje: 'Acceso autorizado',
+      sub: usuario.sub,
+      correo: usuario.correo,
+      rol: usuario.rol,
     };
+  }
+
+  // Corrección 2026-09-03 (auditoría de seguridad de la PWA): antes,
+  // "cerrar sesión" era una operación puramente del navegador
+  // (document.cookie = '...expirada...') -- eso ya no es posible con
+  // una cookie HttpOnly (JavaScript tampoco puede borrarla, por el
+  // mismo motivo que no puede leerla). Ahora es el propio servidor
+  // quien la borra.
+  @Post('logout')
+  logout(@Res({ passthrough: true }) response: Response) {
+    response.clearCookie(NOMBRE_COOKIE_SESION, { path: '/' });
+    return { mensaje: 'Sesión cerrada.' };
   }
 
   // Adenda 2026-08-27: eliminar la propia cuenta, a solicitud del
@@ -125,7 +158,14 @@ export class AuthController {
   async eliminarMiCuenta(
     @Body() dto: EliminarCuentaDto,
     @CurrentUser() usuario: JwtPayload,
+    @Res({ passthrough: true }) response: Response,
   ) {
-    return this.usuariosService.eliminarPropiaCuenta(usuario.sub, dto.motivo);
+    const resultado = await this.usuariosService.eliminarPropiaCuenta(usuario.sub, dto.motivo);
+    // Corrección 2026-09-03 (auditoría de seguridad de la PWA): se
+    // borra la cookie directamente aquí, en el servidor -- no depende
+    // de que el frontend recuerde llamar a /auth/logout por separado
+    // después. La cuenta eliminada nunca debe dejar una sesión activa.
+    response.clearCookie(NOMBRE_COOKIE_SESION, { path: '/' });
+    return resultado;
   }
 }
