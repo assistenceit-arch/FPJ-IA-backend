@@ -3,6 +3,8 @@ import { ProcedimientosService } from '../procedimientos/procedimientos.service'
 import { PagosService } from '../pagos/pagos.service';
 import { UsuariosService } from '../usuarios/usuarios.service';
 import { AuditoriaService } from '../auditoria/auditoria.service';
+import { EstadisticasService } from '../estadisticas/estadisticas.service';
+import { ConsultarEstadisticasDto } from '../estadisticas/dto/consultar-estadisticas.dto';
 import { ExonerarPagoDto } from './dto/exonerar-pago.dto';
 import { DesbloqueoEdicionDto } from './dto/desbloqueo-edicion.dto';
 import { CambiarRolDto } from './dto/cambiar-rol.dto';
@@ -25,7 +27,18 @@ export class AdminController {
     private readonly pagosService: PagosService,
     private readonly usuariosService: UsuariosService,
     private readonly auditoriaService: AuditoriaService,
+    private readonly estadisticasService: EstadisticasService,
   ) {}
+
+  // ── Estadísticas ──
+  // Adenda 2026-09-02, a solicitud del usuario: delitos más generados,
+  // casos por funcionario, casos por estación, y estándar vs.
+  // complejos -- filtrable por un rango de fechas (el frontend traduce
+  // "día/semana/mes/año" al rango real antes de consultar).
+  @Get('estadisticas')
+  estadisticas(@Query() dto: ConsultarEstadisticasDto) {
+    return this.estadisticasService.obtener(dto);
+  }
 
   // ── Procedimientos / exoneración de pago ──
 
