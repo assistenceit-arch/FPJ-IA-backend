@@ -270,7 +270,13 @@ model Capturado {
   redesSociales        String? // Adenda 2026-07-19: requerido por el FPJ-6 (Acta de Derechos)
   direccion            String?
   telefono             String?
-  descripcionFisicaVestimenta String? // Adenda 2026-08-03: descripción física y de vestimenta del interviniente, a solicitud del usuario.
+  // Adenda 2026-09-03, a solicitud del usuario: el campo combinado
+  // "descripcionFisicaVestimenta" se dividió en dos -- descripción
+  // física y descripción de vestimenta por separado, cada una en su
+  // propia sección del formulario (junto a "Señales particulares",
+  // que ya existía como campo independiente desde antes).
+  descripcionFisica    String?
+  descripcionVestimenta String?
   senalesParticulares  String?
   nombrePadres         String?
   telefonoPadres       String?

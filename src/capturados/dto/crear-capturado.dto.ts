@@ -114,7 +114,11 @@ export class CrearCapturadoDto {
 
   @IsOptional()
   @IsString()
-  descripcionFisicaVestimenta?: string;
+  descripcionFisica?: string;
+
+  @IsOptional()
+  @IsString()
+  descripcionVestimenta?: string;
 
   @IsOptional()
   @IsString()
