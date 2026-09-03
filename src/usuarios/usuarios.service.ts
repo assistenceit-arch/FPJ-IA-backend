@@ -450,6 +450,12 @@ export class UsuariosService {
         tokenRecuperacionExpira: null,
         bloqueadoPorIntentos: false,
         intentosFallidosLogin: 0,
+        // Corrección 2026-09-03: invalida cualquier sesión activa
+        // emitida antes de este momento (ver JwtStrategy) -- si
+        // alguien más tenía una sesión robada abierta, deja de
+        // funcionar de inmediato en cuanto se restablece la
+        // contraseña, sin esperar a que venza por sí sola.
+        passwordCambiadaEn: new Date(),
       },
     });
 

@@ -71,6 +71,17 @@ model Usuario {
   tokenRecuperacion       String?   @unique
   tokenRecuperacionExpira DateTime?
 
+  // Corrección 2026-09-03 (auditoría de seguridad, segunda ronda): si
+  // alguien roba una sesión activa (el token en sí, no la contraseña),
+  // cambiar la contraseña NO invalidaba esa sesión robada -- seguía
+  // funcionando hasta por 8 horas más, justo cuando el usuario legítimo
+  // más necesita que deje de funcionar. Este campo se actualiza cada
+  // vez que la contraseña cambia; JwtStrategy compara la fecha de
+  // emisión del token contra este valor, y rechaza cualquier token
+  // emitido ANTES del último cambio de contraseña -- forzando a volver
+  // a iniciar sesión, en todos los dispositivos, en cuanto se cambia.
+  passwordCambiadaEn DateTime?
+
   procedimientos Procedimiento[]
 
   createdAt DateTime @default(now())

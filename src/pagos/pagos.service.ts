@@ -8,6 +8,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditoriaService } from '../auditoria/auditoria.service';
+import { detectarTipoArchivoReal } from './validar-archivo.util';
 import { ProcedimientoAccesoService } from '../procedimientos/procedimiento-acceso.service';
 import { ConfiguracionPagosService } from '../configuracion-pagos/configuracion-pagos.service';
 import { VerificarPagoDto } from './dto/verificar-pago.dto';
@@ -56,6 +57,18 @@ export class PagosService {
     if (!comprobante) {
       throw new BadRequestException(
         'Debe adjuntar el comprobante de la transferencia (imagen o PDF) donde se vea la fecha, el número de referencia y el valor del movimiento.',
+      );
+    }
+
+    // Corrección 2026-09-03 (auditoría de seguridad, segunda ronda):
+    // el filtro del controller solo revisa el tipo que el cliente
+    // DECLARA (fácil de falsificar) -- aquí se revisa el contenido
+    // REAL del archivo (sus primeros bytes), para confirmar que de
+    // verdad es una imagen o un PDF, no cualquier otra cosa disfrazada.
+    const tipoReal = detectarTipoArchivoReal(comprobante.buffer);
+    if (!tipoReal) {
+      throw new BadRequestException(
+        'El archivo no parece ser una imagen (JPG, PNG) ni un PDF válido -- revisa que no esté corrupto o renombrado.',
       );
     }
     if (!TIPOS_PERMITIDOS[comprobante.mimetype]) {

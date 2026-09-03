@@ -45,8 +45,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
    * petición autenticada -- costo aceptable (una consulta simple por
    * petición) para una aplicación de este tamaño, a cambio de que
    * cualquier bloqueo o eliminación surta efecto de inmediato.
+   *
+   * Corrección 2026-09-03 (auditoría de seguridad, segunda ronda):
+   * mismo principio, aplicado a un cambio de contraseña -- si alguien
+   * robó una sesión activa, cambiar la contraseña no la invalidaba,
+   * seguía funcionando hasta por 8 horas más. `payload.iat` (el
+   * estándar JWT para "emitido en", en segundos desde 1970) se compara
+   * contra passwordCambiadaEn -- cualquier token emitido ANTES del
+   * último cambio de contraseña queda rechazado.
    */
-  async validate(payload: { sub: string; correo: string; rol: string }) {
+  async validate(payload: { sub: string; correo: string; rol: string; iat?: number }) {
     const usuario = await this.usuariosService.buscarPorId(payload.sub);
 
     if (!usuario || usuario.eliminado) {
@@ -59,6 +67,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException(
         'Tu cuenta fue bloqueada automáticamente por múltiples intentos fallidos de inicio de sesión.',
       );
+    }
+    if (usuario.passwordCambiadaEn && payload.iat) {
+      const emitidoEn = new Date(payload.iat * 1000);
+      if (emitidoEn < usuario.passwordCambiadaEn) {
+        throw new UnauthorizedException(
+          'Tu contraseña cambió después de que iniciaste esta sesión. Vuelve a iniciar sesión.',
+        );
+      }
     }
 
     return payload;
