@@ -81,6 +81,11 @@ export class UsuariosService {
         correoVerificado: false,
         tokenVerificacion: token,
         tokenVerificacionExpira: expira,
+        // Corrección 2026-09-04: el DTO ya garantiza que este valor es
+        // exactamente `true` (ver @Equals en RegistrarPublicoDto) --
+        // aquí solo queda registrar EL MOMENTO exacto de la aceptación,
+        // que es lo que le da valor legal real a esta casilla.
+        politicaDatosAceptadaEn: new Date(),
       },
     });
 

@@ -34,6 +34,15 @@ model Usuario {
   tokenVerificacion       String?   @unique
   tokenVerificacionExpira DateTime?
 
+  // Corrección 2026-09-04, a solicitud del usuario: registro con valor
+  // legal real de la aceptación de la Política de Tratamiento de Datos
+  // -- no solo una casilla visual en el formulario, sino evidencia
+  // genuina de CUÁNDO cada funcionario aceptó. Se guarda al momento del
+  // registro (ver UsuariosService.registrarPublico), nunca queda vacío
+  // para cuentas nuevas -- la casilla es obligatoria en el formulario,
+  // y el backend también la exige (ver RegistrarPublicoDto).
+  politicaDatosAceptadaEn DateTime?
+
   // Adenda 2026-08-08: eliminación lógica (RT-006/AT-005, mismo criterio
   // que Procedimiento) -- deliberadamente separado de `activo`, que ya
   // se usa para bloqueo/desbloqueo temporal. Un usuario bloqueado sigue
