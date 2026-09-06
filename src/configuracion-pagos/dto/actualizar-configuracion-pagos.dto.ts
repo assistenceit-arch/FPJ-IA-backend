@@ -49,6 +49,24 @@ export class ActualizarConfiguracionPagosDto {
   @IsString()
   tarjetaInstrucciones?: string;
 
+  // Adenda 2026-09-06, a solicitud del usuario: Wompí (enlace externo)
+  // y Llave (Bre-B), mismo criterio que los demás métodos.
+  @IsOptional()
+  @IsBoolean()
+  wompiHabilitado?: boolean;
+
+  @IsOptional()
+  @IsString()
+  wompiLink?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  llaveHabilitada?: boolean;
+
+  @IsOptional()
+  @IsString()
+  llaveNumero?: string;
+
   // Adenda 2026-08-08: contacto de asesoría para procedimientos
   // complejos, mostrado en el Bloque 8 tras adjuntar el comprobante.
   @IsOptional()

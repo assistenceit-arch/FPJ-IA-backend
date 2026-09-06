@@ -925,6 +925,18 @@ model ConfiguracionPagos {
   tarjetaHabilitada    Boolean @default(false)
   tarjetaInstrucciones String?
 
+  // Adenda 2026-09-06, a solicitud del usuario: 2 métodos de pago
+  // adicionales, mismo patrón que los de arriba -- Wompí (enlace de
+  // cobro externo ya generado en el panel de Wompí, se muestra como un
+  // botón) y Llave (identificador de pago inmediato interbancario,
+  // popularizado como "Bre-B" en Colombia -- se muestra como un dato
+  // simple, igual que Nequi).
+  wompiHabilitado Boolean @default(false)
+  wompiLink       String?
+
+  llaveHabilitada Boolean @default(false)
+  llaveNumero     String?
+
   // Adenda 2026-08-08: datos de contacto que se muestran al funcionario
   // en el Bloque 8 tras adjuntar el comprobante en un procedimiento
   // COMPLEJO ("si un asesor no te ha contactado en 15 minutos...").
