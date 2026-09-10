@@ -1,7 +1,23 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import * as fs from 'fs';
+import * as path from 'path';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditoriaService } from '../auditoria/auditoria.service';
+
+// Corrección 2026-09-10, hallazgo real señalado por el usuario: hasta
+// ahora, este borrado automático solo eliminaba los REGISTROS de la
+// base de datos -- los archivos físicos reales (los .docx generados,
+// y los comprobantes de pago adjuntos) nunca se borraban del disco del
+// servidor, quedando huérfanos ahí para siempre, en directa
+// contradicción con lo que promete la Política de Tratamiento de
+// Datos ("la eliminación es definitiva e irreversible"). Cada
+// procedimiento guarda sus archivos en una carpeta propia, nombrada
+// con su propio ID (ver documentos.service.ts y pagos.service.ts) --
+// eso permite borrar ambas carpetas completas de una sola vez, sin
+// necesitar rastrear cada archivo individual.
+const CARPETA_DOCUMENTOS = path.join(process.cwd(), 'storage', 'documentos-generados');
+const CARPETA_COMPROBANTES = path.join(process.cwd(), 'storage', 'comprobantes-pago');
 
 // Adenda 2026-08-23: política de retención de datos definida con el
 // usuario -- todo procedimiento se elimina físicamente 7 días
@@ -94,6 +110,21 @@ export class LimpiezaAutomaticaService {
         });
 
         await this.prisma.procedimiento.delete({ where: { id: procedimiento.id } });
+
+        // Se borran las 2 carpetas físicas de este procedimiento --
+        // en un try/catch propio: si algo falla aquí (ej. un problema
+        // de permisos puntual), no debe impedir que el borrado de la
+        // base de datos ya realizado cuente como exitoso, pero sí debe
+        // quedar registrado con claridad para poder revisarlo.
+        try {
+          fs.rmSync(path.join(CARPETA_DOCUMENTOS, procedimiento.id), { recursive: true, force: true });
+          fs.rmSync(path.join(CARPETA_COMPROBANTES, procedimiento.id), { recursive: true, force: true });
+        } catch (errorArchivos) {
+          this.logger.error(
+            `El procedimiento ${procedimiento.id} se borró de la base de datos, pero sus archivos físicos NO se pudieron eliminar -- revisar manualmente.`,
+            errorArchivos instanceof Error ? errorArchivos.stack : String(errorArchivos),
+          );
+        }
       } catch (error) {
         // Un fallo en un procedimiento no debe detener la purga de los
         // demás -- se registra y se continúa con el resto.
