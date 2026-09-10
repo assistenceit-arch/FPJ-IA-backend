@@ -12,6 +12,7 @@ import { detectarTipoArchivoReal } from './validar-archivo.util';
 import { ProcedimientoAccesoService } from '../procedimientos/procedimiento-acceso.service';
 import { ConfiguracionPagosService } from '../configuracion-pagos/configuracion-pagos.service';
 import { VerificarPagoDto } from './dto/verificar-pago.dto';
+import { VerificacionPagoIaService } from './verificacion-pago-ia.service';
 
 const ESTADO_INICIAL = 'Pendiente';
 
@@ -34,6 +35,7 @@ export class PagosService {
     private readonly auditoria: AuditoriaService,
     private readonly acceso: ProcedimientoAccesoService,
     private readonly configuracionPagos: ConfiguracionPagosService,
+    private readonly verificacionIA: VerificacionPagoIaService,
   ) {}
 
   /**
@@ -99,10 +101,36 @@ export class PagosService {
 
     const rutaComprobante = this.guardarComprobante(procedimientoId, comprobante);
 
+    // Adenda 2026-09-07, a solicitud del usuario: verificación
+    // automática por IA -- se arma la lista de destinos válidos a
+    // partir de los métodos de pago que un administrador tenga
+    // realmente habilitados en este momento (Nequi, cuenta bancaria,
+    // Llave/Bre-B). Wompí y tarjeta no se incluyen aquí -- no tienen un
+    // número de cuenta fijo que buscar en un comprobante (Wompí es un
+    // enlace de cobro externo; tarjeta no deja un "destino" comparable
+    // en el comprobante).
+    const destinosValidos = [
+      configuracion.nequiHabilitado && configuracion.nequiNumero,
+      configuracion.cuentaHabilitada && configuracion.cuentaNumero,
+      configuracion.llaveHabilitada && configuracion.llaveNumero,
+    ].filter((v): v is string => Boolean(v));
+
+    const resultadoIA = await this.verificacionIA.verificar(
+      comprobante.buffer,
+      comprobante.mimetype,
+      {
+        valorEsperado: Number(valor),
+        destinosValidos,
+        fechaMinima: procedimiento.fechaCaptura,
+      },
+    );
+
     const datos = {
       valor,
       comprobantePago: rutaComprobante,
-      estadoPago: ESTADO_INICIAL,
+      estadoPago: resultadoIA.aprobadoAutomaticamente ? 'Verificado' : ESTADO_INICIAL,
+      verificadoPorIA: resultadoIA.aprobadoAutomaticamente,
+      analisisIA: resultadoIA.analisis,
     };
 
     const pago = existente
@@ -114,7 +142,7 @@ export class PagosService {
       accion: existente ? 'Modificar' : 'Crear',
       tablaAfectada: 'pagos',
       registroAfectado: pago.id,
-      descripcionEvento: `${existente ? 'Nuevo pago registrado (reintento tras rechazo anterior)' : 'Pago registrado'} por $${valor} para el procedimiento ${procedimientoId} (${procedimiento.tipoProcedimiento})`,
+      descripcionEvento: `${existente ? 'Nuevo pago registrado (reintento tras rechazo anterior)' : 'Pago registrado'} por $${valor} para el procedimiento ${procedimientoId} (${procedimiento.tipoProcedimiento})${resultadoIA.aprobadoAutomaticamente ? ' -- VERIFICADO AUTOMÁTICAMENTE POR IA' : ''}`,
       procedimientoId,
     });
 
@@ -242,5 +270,46 @@ export class PagosService {
         },
       },
     });
+  }
+
+  /**
+   * Adenda 2026-09-07, a solicitud del usuario: un administrador
+   * siempre puede revertir una aprobación automática de la IA y
+   * regresar el pago a Pendiente para revisión manual -- la
+   * automatización nunca es la última palabra, solo un primer filtro
+   * para los casos claros.
+   */
+  async revertirVerificacionIA(
+    procedimientoId: string,
+    usuarioId: string,
+    correoUsuario: string,
+  ) {
+    await this.acceso.verificarExiste(procedimientoId);
+
+    const pago = await this.prisma.pago.findUnique({ where: { procedimientoId } });
+    if (!pago) {
+      throw new NotFoundException('Este procedimiento no tiene un pago registrado.');
+    }
+    if (!pago.verificadoPorIA) {
+      throw new BadRequestException(
+        'Este pago no fue verificado automáticamente por IA -- no hay nada que revertir.',
+      );
+    }
+
+    const actualizado = await this.prisma.pago.update({
+      where: { procedimientoId },
+      data: { estadoPago: 'Pendiente', verificadoPorIA: false },
+    });
+
+    await this.auditoria.registrar({
+      usuario: correoUsuario,
+      accion: 'Modificar',
+      tablaAfectada: 'pagos',
+      registroAfectado: actualizado.id,
+      descripcionEvento: `Verificación automática por IA REVERTIDA manualmente para el procedimiento ${procedimientoId} -- regresa a Pendiente para revisión humana.`,
+      procedimientoId,
+    });
+
+    return actualizado;
   }
 }

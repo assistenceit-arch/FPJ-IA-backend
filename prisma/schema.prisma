@@ -893,6 +893,18 @@ model Pago {
   comprobantePago  String // ahora siempre presente: ruta del archivo adjunto (obligatorio)
   estadoPago       String // Pendiente | Verificado | Rechazado
 
+  // Adenda 2026-09-07, a solicitud del usuario: verificación automática
+  // de pagos mediante IA (Claude Sonnet, misma cuenta ya usada para la
+  // narrativa del FPJ-5). Cuando el comprobante cumple con certeza los
+  // 4 criterios (valor, destino, fecha, autenticidad aparente), el pago
+  // se marca Verificado sin intervención humana -- pero SIEMPRE queda
+  // registrado que fue la IA quien lo hizo (nunca se pierde esta
+  // distinción, ni siquiera visualmente), junto con su razonamiento
+  // completo, para que un administrador pueda auditar o revertir la
+  // decisión en cualquier momento si algo no cuadra.
+  verificadoPorIA Boolean @default(false)
+  analisisIA      String? // el razonamiento de la IA, se guarda siempre (haya aprobado o no) para acelerar la revisión humana cuando aplique
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

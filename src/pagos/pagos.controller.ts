@@ -93,4 +93,14 @@ export class PagosController {
   ) {
     return this.service.verificar(procedimientoId, dto, usuario.sub, usuario.correo);
   }
+
+  @UseGuards(RolesGuard)
+  @Roles('ADMINISTRADOR')
+  @Patch('revertir-verificacion-ia')
+  revertirVerificacionIA(
+    @Param('procedimientoId') procedimientoId: string,
+    @CurrentUser() usuario: JwtPayload,
+  ) {
+    return this.service.revertirVerificacionIA(procedimientoId, usuario.sub, usuario.correo);
+  }
 }
