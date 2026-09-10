@@ -96,5 +96,8 @@
     "bcrypt@6.0.0": true,
     "prisma@6.19.3": true,
     "unrs-resolver@1.12.2": true
+  },
+  "overrides": {
+    "multer": "2.3.0"
   }
 }
