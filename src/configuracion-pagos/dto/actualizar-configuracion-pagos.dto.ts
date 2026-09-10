@@ -67,6 +67,10 @@ export class ActualizarConfiguracionPagosDto {
   @IsString()
   llaveNumero?: string;
 
+  @IsOptional()
+  @IsBoolean()
+  verificacionIaHabilitada?: boolean;
+
   // Adenda 2026-08-08: contacto de asesoría para procedimientos
   // complejos, mostrado en el Bloque 8 tras adjuntar el comprobante.
   @IsOptional()

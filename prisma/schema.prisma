@@ -949,6 +949,14 @@ model ConfiguracionPagos {
   llaveHabilitada Boolean @default(false)
   llaveNumero     String?
 
+  // Adenda 2026-09-07, a solicitud del usuario: interruptor para
+  // apagar la verificación automática de pagos por IA en cualquier
+  // momento, sin necesitar un despliegue de código -- si alguna vez da
+  // problemas, un administrador puede volver todo manual de inmediato.
+  // Empieza en `true` porque la funcionalidad ya se probó en vivo antes
+  // de agregar este interruptor.
+  verificacionIaHabilitada Boolean @default(true)
+
   // Adenda 2026-08-08: datos de contacto que se muestran al funcionario
   // en el Bloque 8 tras adjuntar el comprobante en un procedimiento
   // COMPLEJO ("si un asesor no te ha contactado en 15 minutos...").

@@ -84,6 +84,11 @@ export class AdminController {
     return this.pagosService.listarPendientesAdmin();
   }
 
+  @Get('pagos/verificados-ia')
+  listarPagosVerificadosPorIA() {
+    return this.pagosService.listarVerificadosPorIA();
+  }
+
   // ── Usuarios / roles / bloqueo ──
 
   @Get('usuarios')

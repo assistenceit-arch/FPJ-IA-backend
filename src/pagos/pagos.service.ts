@@ -115,15 +115,20 @@ export class PagosService {
       configuracion.llaveHabilitada && configuracion.llaveNumero,
     ].filter((v): v is string => Boolean(v));
 
-    const resultadoIA = await this.verificacionIA.verificar(
-      comprobante.buffer,
-      comprobante.mimetype,
-      {
-        valorEsperado: Number(valor),
-        destinosValidos,
-        fechaMinima: procedimiento.fechaCaptura,
-      },
-    );
+    // Adenda 2026-09-07, a solicitud del usuario: interruptor para
+    // apagar la verificación automática en cualquier momento -- si
+    // está deshabilitada, el pago sigue el flujo de siempre (Pendiente,
+    // esperando revisión humana), sin siquiera llamar a la IA.
+    const resultadoIA = configuracion.verificacionIaHabilitada
+      ? await this.verificacionIA.verificar(comprobante.buffer, comprobante.mimetype, {
+          valorEsperado: Number(valor),
+          destinosValidos,
+          fechaMinima: procedimiento.fechaCaptura,
+        })
+      : {
+          aprobadoAutomaticamente: false,
+          analisis: 'La verificación automática por IA está deshabilitada por un administrador -- este pago requiere revisión manual.',
+        };
 
     const datos = {
       valor,
@@ -266,6 +271,31 @@ export class PagosService {
             numeroInterno: true,
             tipoProcedimiento: true,
             usuario: { select: { nombres: true, apellidos: true, correo: true, telefono: true } },
+          },
+        },
+      },
+    });
+  }
+
+  /**
+   * Adenda 2026-09-07, a solicitud del usuario: vista centralizada de
+   * los pagos que la IA aprobó automáticamente, para que un
+   * administrador pueda revisarlos de un vistazo sin tener que entrar
+   * procedimiento por procedimiento -- los más recientes primero,
+   * limitado a los últimos 50 para mantener la consulta rápida.
+   */
+  async listarVerificadosPorIA() {
+    return this.prisma.pago.findMany({
+      where: { verificadoPorIA: true },
+      orderBy: { updatedAt: 'desc' },
+      take: 50,
+      include: {
+        procedimiento: {
+          select: {
+            id: true,
+            numeroInterno: true,
+            tipoProcedimiento: true,
+            usuario: { select: { nombres: true, apellidos: true, correo: true } },
           },
         },
       },
