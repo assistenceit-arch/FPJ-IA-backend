@@ -678,6 +678,13 @@ export class DocumentosService {
         identificacionPlena: c.identificacionPlena,
         formaIdentificacion: c.formaIdentificacion,
         escolaridad: c.escolaridad,
+        // Corrección 2026-09-11, hallazgo real reportado tras un caso
+        // en vivo en producción: mismo patrón que escolaridad arriba --
+        // se capturaban en el Bloque 2 pero nunca llegaban al contexto
+        // del FPJ-5.
+        descripcionFisica: c.descripcionFisica,
+        descripcionVestimenta: c.descripcionVestimenta,
+        senalesParticulares: c.senalesParticulares,
         derechosLeidos: c.derechosLeidos,
         fechaCaptura: c.fechaCaptura ? c.fechaCaptura.toISOString() : null,
         horaCaptura: c.horaCaptura,

@@ -55,6 +55,14 @@ export interface IntervinienteNarracion {
   // el Bloque 2 pero nunca llegaba al contexto que se le manda a la IA,
   // así que el FPJ-5 nunca lo mencionaba.
   escolaridad?: string | null;
+  // Adenda 2026-09-11, hallazgo real reportado tras un caso en vivo en
+  // producción: estos 3 campos se capturaban en el Bloque 2, pero
+  // nunca llegaban al contexto que se le manda a la IA -- el FPJ-5
+  // nunca los mencionaba, a pesar de estar diligenciados. Mismo patrón
+  // exacto que el bug de "escolaridad" arriba.
+  descripcionFisica?: string | null;
+  descripcionVestimenta?: string | null;
+  senalesParticulares?: string | null;
   // Adenda 2026-08-21: lectura de derechos (y la hora de captura que de
   // ahí se deriva) pasa a ser individual por interviniente -- antes
   // vivía en `actuaciones`, general para todo el procedimiento, lo que

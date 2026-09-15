@@ -76,11 +76,7 @@ Si alguno de estos datos no fue suministrado, debe existir explicación razonabl
 
 # 5. DESCRIPCIÓN FÍSICA
 
-Verificar, respecto de cada persona capturada o aprehendida:
-
-* características físicas;
-* vestimenta;
-* señales particulares.
+Respecto de cada persona capturada o aprehendida, el sistema ya captura como campos estructurados: características físicas, vestimenta, y señales particulares (Bloque 2 - Capturados/Aprehendidos). Corrección 2026-09-11, hallazgo real reportado tras un caso en vivo en producción: estos 3 datos se estaban capturando en el formulario, pero nunca llegaban al contexto de la narrativa, así que jamás aparecían en el relato aunque el funcionario los hubiera diligenciado. Usa directamente los valores ya capturados (`descripcionFisica`, `descripcionVestimenta`, `senalesParticulares`), sin volver a preguntarlos. Mismo criterio que cámaras/testigos (numeral 2) y antecedentes (numeral 2): cuando el dato fue suministrado, el relato **debe mencionarlo explícitamente** al describir a la persona -- omitir la mención quando el dato existe es un error de redacción. Si alguno de los 3 no fue diligenciado (campo vacío), simplemente no se menciona esa parte, sin solicitar aclaración por su ausencia.
 
 # 6. COMPORTAMIENTO
 
@@ -202,9 +198,9 @@ Cuando existan procedimientos mixtos (adolescentes y adultos), individualizar la
 
 # 14. HORA DE PUESTA A DISPOSICIÓN Y CONTROL DE DEMORA
 
-La hora de puesta a disposición de la autoridad competente es obligatoria.
+La hora de puesta a disposición de la autoridad competente es obligatoria -- se captura en el formulario y se usa para calcular la demora (numeral siguiente), pero **nunca debe aparecer como una hora literal en el texto del relato**. Corrección 2026-09-11, a solicitud expresa del usuario tras un caso real en producción: el relato solo debe narrar el hecho de que la persona capturada o aprehendida, junto con los elementos materiales probatorios incautados, fue puesta a disposición de la autoridad competente -- sin mencionar en ningún momento a qué hora ocurrió. Ejemplo de redacción correcta: "fue puesto a disposición de la Fiscalía General de la Nación, junto con los elementos materiales probatorios incautados". Nunca redactar algo como "fue puesto a disposición a las 14:35" o cualquier variante que exprese la hora.
 
-Si transcurren más de 5 horas entre la hora de captura o aprehensión y la hora de puesta a disposición, solicitar justificación razonable de la demora antes de generar el informe. Sin dicha justificación, el informe no debe generarse.
+Si transcurren más de 5 horas entre la hora de captura o aprehensión y la hora de puesta a disposición, solicitar justificación razonable de la demora antes de generar el informe. Sin dicha justificación, el informe no debe generarse. Esta verificación de la demora es puramente interna (para decidir si hace falta pedir una justificación) -- tampoco debe traducirse en mencionar la hora de puesta a disposición dentro del relato, ni siquiera al narrar la justificación de una demora.
 
 # 15. CADENA DE CUSTODIA
 
@@ -232,6 +228,8 @@ Reglas:
 **Verificación de horas suministradas mediante aclaración.** Cuando una hora llegue como respuesta a una pregunta de aclaración (por ejemplo, la hora de comunicación a un acudiente), no basta con verificar que sea coherente con las demás horas mencionadas dentro de esa misma respuesta o del párrafo donde se inserta: debe verificarse contra **todas** las horas críticas ya conocidas del procedimiento, incluidas las que provienen de datos estructurados suministrados desde el inicio (por ejemplo, la hora de puesta a disposición, que normalmente ya se conoce antes de generar el informe). Antes de incorporar la aclaración y generar el informe, repetir la verificación completa de secuencia cronológica del numeral 4 con el dato nuevo ya incorporado. Si el dato aportado en la aclaración genera una inconsistencia con una hora ya conocida, no incorporarlo sin más: señalar la inconsistencia y solicitar que se resuelva antes de generar el informe.
 
 Ejemplos de inconsistencias bloqueantes: captura anterior al inicio del procedimiento; aprehensión anterior a la observación inicial o denuncia; comunicación al acudiente anterior a la aprehensión; comunicación al acudiente posterior a la puesta a disposición; hora de captura distinta a la hora de lectura de derechos; hallazgo narrado después de la captura o aprehensión; demora superior a 5 horas sin justificación.
+
+**Nota:** que una hora sea "crítica" para efectos de esta verificación interna de coherencia cronológica no significa que deba aparecer como texto literal en el relato. En particular, la hora de puesta a disposición se usa aquí únicamente para validar, nunca para narrar (ver numeral 14).
 
 # 18. PROCEDIMIENTOS CON MÚLTIPLES INTERVINIENTES Y PROCEDIMIENTOS MIXTOS
 
