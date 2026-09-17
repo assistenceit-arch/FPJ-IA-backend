@@ -630,6 +630,13 @@ export class DocumentosService {
         servicio: funcionarioActuante.servicio,
         estacion: funcionarioActuante.estacion,
         cai: funcionarioActuante.cai,
+        // Corrección 2026-09-18, hallazgo real reportado tras pruebas
+        // en vivo: el prompt (numeral 1) ya pedía "zona de atención"
+        // como si existiera en los datos, pero este campo nunca se
+        // había incluido en el contexto que se le envía a la IA --
+        // existía en el formulario (Bloque 1) y en la base de datos,
+        // pero jamás llegaba hasta aquí.
+        zonaAtencion: funcionarioActuante.zonaAtencion,
       },
       companero: companeroPatrulla
         ? {

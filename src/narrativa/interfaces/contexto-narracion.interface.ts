@@ -226,6 +226,7 @@ export interface ContextoNarracionFpj5 {
     servicio: string;
     estacion: string;
     cai?: string | null;
+    zonaAtencion?: string | null;
   };
   companero: {
     nombreCompleto: string;
