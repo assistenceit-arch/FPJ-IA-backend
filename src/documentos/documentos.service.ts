@@ -431,8 +431,15 @@ export class DocumentosService {
       IDENTIFICACION: capturado.numeroDocumento
         ? `${capturado.tipoDocumento ?? ''} ${capturado.numeroDocumento}`.trim()
         : 'No aporta',
+      // Corrección 2026-09-18, bug real reportado tras pruebas en vivo:
+      // toLocaleDateString('es-CO') sin fijar zona horaria usa la zona
+      // horaria LOCAL del sistema donde corre el proceso -- en Colombia
+      // (UTC-5), una fecha de nacimiento guardada como medianoche UTC
+      // se formatea un día antes. Se fija explícitamente timeZone:'UTC'
+      // para que la fecha calendario no dependa de dónde corra el
+      // servidor.
       FECHA_NAC: capturado.fechaNacimiento
-        ? capturado.fechaNacimiento.toLocaleDateString('es-CO')
+        ? capturado.fechaNacimiento.toLocaleDateString('es-CO', { timeZone: 'UTC' })
         : 'No aporta',
       LUGAR_NAC: oNoAporta(capturado.lugarNacimiento),
       PADRES: oNoAporta(capturado.nombrePadres),
@@ -459,13 +466,13 @@ export class DocumentosService {
       FUNCIONARIO_INFO: `${funcionarioActuante.cargo} ${funcionarioActuante.nombreCompleto} - Placa ${funcionarioActuante.placa}`,
       BT_CIUDAD: lugarProcedimiento.municipio,
       BT_DIA: String(fechaBt.getUTCDate()),
-      BT_MES: fechaBt.toLocaleDateString('es-CO', { month: 'long' }),
+      BT_MES: fechaBt.toLocaleDateString('es-CO', { month: 'long', timeZone: 'UTC' }),
       BT_ANIO: String(fechaBt.getUTCFullYear()),
       BT_HORA: capturado.horaCaptura,
       BT_NOMBRE: nombreCompletoCapturado,
       BT_CEDULA: oNoAporta(capturado.numeroDocumento),
       BT_FECHA_NAC: capturado.fechaNacimiento
-        ? capturado.fechaNacimiento.toLocaleDateString('es-CO')
+        ? capturado.fechaNacimiento.toLocaleDateString('es-CO', { timeZone: 'UTC' })
         : 'No aporta',
       BT_EDAD: String(capturado.edad),
       BT_ESTADO_CIVIL: oNoAporta(capturado.estadoCivil),
@@ -860,6 +867,23 @@ export class DocumentosService {
     const plantilla = esAprehendido ? PLANTILLA_FPJ5_APREHENDIDO : PLANTILLA_FPJ5_CAPTURADO;
 
     const hoy = new Date();
+    // Corrección 2026-09-18, bug real reportado tras pruebas en vivo:
+    // usar getUTCFullYear()/getUTCMonth()/getUTCDate() sobre el
+    // instante actual calcula el día en UTC, no en Colombia (UTC-5,
+    // sin horario de verano) -- cualquier informe generado entre las
+    // 7:00 p.m. y la medianoche hora Colombia cae ya en el día
+    // siguiente en UTC, mostrando una fecha equivocada (un día
+    // adelantada). Se calcula explícitamente en la zona horaria de
+    // Bogotá, sin importar en qué zona horaria esté el servidor.
+    const partesFechaHoyBogota = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Bogota',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    })
+      .format(hoy)
+      .split('-'); // 'en-CA' produce siempre AAAA-MM-DD, sin ambigüedad de orden
+    const [anioHoyBogota, mesHoyBogota, diaHoyBogota] = partesFechaHoyBogota;
     const anexos = await this.prisma.documentoGenerado.groupBy({
       by: ['tipoDocumento'],
       where: { procedimientoId },
@@ -905,9 +929,9 @@ export class DocumentosService {
     const datosGlobales: Record<string, string> = {
       DEPARTAMENTO: lugarProcedimiento.departamento,
       MUNICIPIO: lugarProcedimiento.municipio,
-      FECHA_INFORME_ANIO: String(hoy.getUTCFullYear()),
-      FECHA_INFORME_MES: String(hoy.getUTCMonth() + 1).padStart(2, '0'),
-      FECHA_INFORME_DIA: String(hoy.getUTCDate()).padStart(2, '0'),
+      FECHA_INFORME_ANIO: anioHoyBogota,
+      FECHA_INFORME_MES: mesHoyBogota,
+      FECHA_INFORME_DIA: diaHoyBogota,
       DESTINO_INFORME: destinoInforme,
       // Adenda 2026-08-20: bug real encontrado por el usuario -- el
       // texto de este campo estaba fijo en la plantilla como
@@ -936,8 +960,13 @@ export class DocumentosService {
       FUNCIONARIO_CORREO: funcionarioActuante.correo,
       ...digitosPrefijados(digitosFecha(procedimiento.fechaCaptura), 'CAP'),
       ...digitosPrefijados(digitosHora(procedimiento.horaCaptura), 'CAP'),
-      ...digitosPrefijados(digitosFecha(procedimiento.fechaDisposicion), 'DISP'),
-      ...digitosPrefijados(digitosHora(procedimiento.horaDisposicion), 'DISP'),
+      // Corrección 2026-09-18, a solicitud del usuario: la fecha y hora
+      // de puesta a disposición se siguen exigiendo y usando
+      // internamente (validación arriba, y cálculo de demora en
+      // demora.util.ts) -- pero el espacio del propio FPJ-5 destinado
+      // a mostrarlas debe quedar en blanco, nunca con el dato real.
+      ...digitosPrefijados({ D1: '', D2: '', M1: '', M2: '', A1: '', A2: '', A3: '', A4: '' }, 'DISP'),
+      ...digitosPrefijados({ H1: '', H2: '', H3: '', H4: '' }, 'DISP'),
     };
 
     const bloquesIntervinientes = capturados.map((c, i) => {
