@@ -468,7 +468,13 @@ export class DocumentosService {
       BT_DIA: String(fechaBt.getUTCDate()),
       BT_MES: fechaBt.toLocaleDateString('es-CO', { month: 'long', timeZone: 'UTC' }),
       BT_ANIO: String(fechaBt.getUTCFullYear()),
-      BT_HORA: capturado.horaCaptura,
+      // Corrección 2026-09-22, a solicitud del usuario: en el FPJ-6 de
+      // MAYORES de edad (Constancia de Buen Trato), la hora no debe
+      // venir impresa -- se deja una línea en blanco para que el
+      // funcionario la escriba a mano con esfero, después de verificar
+      // el estado del capturado. En el de MENORES (aprehendido) sigue
+      // mostrándose la hora real, sin cambios.
+      BT_HORA: esAprehendido ? capturado.horaCaptura : '________',
       BT_NOMBRE: nombreCompletoCapturado,
       BT_CEDULA: oNoAporta(capturado.numeroDocumento),
       BT_FECHA_NAC: capturado.fechaNacimiento
@@ -476,7 +482,13 @@ export class DocumentosService {
         : 'No aporta',
       BT_EDAD: String(capturado.edad),
       BT_ESTADO_CIVIL: oNoAporta(capturado.estadoCivil),
-      BT_INDICIADO: '',
+      // Corrección 2026-09-22, a solicitud del usuario: toda captura en
+      // flagrancia corresponde siempre a "indiciado" -- se marca con X
+      // de forma fija (antes siempre quedaba en blanco). Nota: en la
+      // plantilla de MENORES (aprehendido) esta marca ya está fija como
+      // texto "_X_" directamente en el documento, no usa este token --
+      // este cambio solo tiene efecto en la plantilla de MAYORES.
+      BT_INDICIADO: 'X',
       BT_IMPUTADO: '',
       BT_DELITO: procedimiento.delito,
     };
